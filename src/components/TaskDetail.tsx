@@ -1,15 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { formatDue } from '../lib/dates'
 import { areaStyle, useAreaMap, useMediaQuery, useNow } from '../hooks'
 import { effectiveHorizon } from '../model/derive'
-import { EFFORT_LABEL, HORIZONS, HORIZON_LABEL, type Effort, type Task } from '../model/types'
+import { EFFORT_LABEL, HORIZONS, HORIZON_LABEL, type Effort, type Horizon, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Icon } from './Icon'
+import { DueField, LinkChips, OptionalField, RepeatField } from './DetailFields'
 import { StepList } from './StepList'
 import './TaskDetail.css'
 
 const EFFORTS: readonly Effort[] = ['s', 'm', 'l']
+
+const HORIZON_SHORT: Record<Horizon, string> = {
+  today: 'Today',
+  week: 'Week',
+  month: 'Month',
+  later: 'Later',
+  someday: 'Someday',
+}
 
 export function TaskDetail() {
   const task = useStore((s) => s.tasks.find((t) => t.id === s.selectedId) ?? null)
@@ -119,34 +127,30 @@ function DetailBody({ task }: { task: Task }) {
         }}
       />
 
+      <LinkChips task={task} />
+
       <fieldset className="detail__group">
         <legend>When</legend>
-        <div className="seg" role="group" aria-label="Ring">
+        <div className="seg seg--rings" role="group" aria-label="Ring">
           {HORIZONS.map((h) => (
             <button
               key={h}
               type="button"
               aria-pressed={task.horizon === h}
+              aria-label={HORIZON_LABEL[h]}
               className={effective === h && task.horizon !== h ? 'seg__pinned' : undefined}
               onClick={() => moveTask(task.id, { horizon: h }, `Moved to ${HORIZON_LABEL[h]}`)}
             >
-              {HORIZON_LABEL[h]}
+              {HORIZON_SHORT[h]}
             </button>
           ))}
         </div>
         {effective !== task.horizon && task.due && (
-          <p className="detail__note">Due {formatDue(task.due, now)}, so it shows in {HORIZON_LABEL[effective]}.</p>
+          <p className="detail__note">The due date keeps it in {HORIZON_LABEL[effective]}.</p>
         )}
+        <DueField task={task} now={now} />
         <div className="detail__row">
-          <label className="detail__inline">
-            <span>Due</span>
-            <input
-              type="date"
-              className="field"
-              value={task.due ?? ''}
-              onChange={(e) => updateTask(task.id, { due: e.target.value || null })}
-            />
-          </label>
+          <RepeatField task={task} />
           <label className="detail__toggle">
             <input
               type="checkbox"
@@ -177,7 +181,8 @@ function DetailBody({ task }: { task: Task }) {
         <StepList task={task} />
       </section>
 
-      <div className="detail__group detail__row">
+      <div className="detail__group">
+        <span className="detail__label">Size</span>
         <div className="seg seg--small" role="group" aria-label="Size">
           {EFFORTS.map((e) => (
             <button key={e} type="button" aria-pressed={task.effort === e} onClick={() => updateTask(task.id, { effort: e })}>
@@ -187,28 +192,32 @@ function DetailBody({ task }: { task: Task }) {
         </div>
       </div>
 
-      <label className="detail__group">
-        <span className="detail__label">Waiting on</span>
-        <input
-          className="field"
-          value={task.waiting ?? ''}
-          placeholder="Leave empty if nothing is blocking it"
-          onChange={(e) => updateTask(task.id, { waiting: e.target.value || null })}
-          maxLength={200}
-        />
-      </label>
+      <div className="detail__optional">
+        <OptionalField label="Waiting on" addLabel="Waiting on someone" hasValue={Boolean(task.waiting)}>
+          <input
+            className="field"
+            value={task.waiting ?? ''}
+            placeholder="e.g. rec letter from Dr. Lee"
+            onChange={(e) => updateTask(task.id, { waiting: e.target.value || null })}
+            maxLength={200}
+            autoFocus={!task.waiting}
+          />
+        </OptionalField>
+        <OptionalField label="Notes" addLabel="Notes or links" hasValue={task.notes.length > 0}>
+          <textarea
+            className="field"
+            rows={4}
+            value={task.notes}
+            placeholder="Details, links, anything"
+            onChange={(e) => updateTask(task.id, { notes: e.target.value.slice(0, 5000) })}
+            autoFocus={task.notes.length === 0}
+          />
+        </OptionalField>
+      </div>
 
-      <label className="detail__group">
-        <span className="detail__label">Notes</span>
-        <textarea
-          className="field"
-          rows={4}
-          value={task.notes}
-          placeholder="Links, details, anything"
-          onChange={(e) => updateTask(task.id, { notes: e.target.value.slice(0, 5000) })}
-        />
-      </label>
-
+      {task.spentMinutes > 0 && (
+        <p className="detail__meta num">{Math.round(task.spentMinutes)} min spent in Focus</p>
+      )}
       <div className="detail__actions">
         <button
           type="button"
@@ -229,9 +238,6 @@ function DetailBody({ task }: { task: Task }) {
           <Icon name="trash" size={18} /> Delete
         </button>
       </div>
-      {task.spentMinutes > 0 && (
-        <p className="detail__meta num">{Math.round(task.spentMinutes)} min spent in Focus</p>
-      )}
     </div>
   )
 }

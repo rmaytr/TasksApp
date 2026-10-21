@@ -50,7 +50,7 @@ test.describe('quick capture', () => {
     await expect(toast(page)).toContainText('Added to Orgs')
 
     await input.press('Escape')
-    await page.keyboard.press('2')
+    await page.keyboard.press('3')
     const orgs = page.locator('section.list__group').filter({ has: page.getByRole('heading', { name: /^Orgs/ }) })
     const row = orgs.locator('li.row').filter({ hasText: 'Email mentee' })
     await expect(row).toBeVisible()
@@ -109,7 +109,7 @@ test.describe('persistence', () => {
 test.describe('list', () => {
   test('checking a task hides it, Undo restores it', async ({ page }) => {
     await loadSample(page)
-    await page.keyboard.press('2')
+    await page.keyboard.press('3')
     const checkboxes = page.getByRole('checkbox', { name: /^Done: / })
     await expect(checkboxes.first()).toBeVisible()
     const before = await checkboxes.count()
@@ -148,8 +148,9 @@ test.describe('task detail', () => {
     await step.press('Enter')
     await expect(detail.getByLabel('Step', { exact: true })).toHaveValue('Book flights')
 
-    await detail.getByRole('button', { name: 'Today', exact: true }).click()
-    await expect(detail.getByRole('button', { name: 'Today', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    const ring = detail.getByRole('group', { name: 'Ring' }).getByRole('button', { name: 'Today', exact: true })
+    await ring.click()
+    await expect(ring).toHaveAttribute('aria-pressed', 'true')
     await expect.poll(() => hubCount(page)).toBe(before + 1)
     await expect(hub(page)).toHaveAttribute('aria-label', /^1 for today/)
   })
@@ -158,7 +159,7 @@ test.describe('task detail', () => {
 test.describe('focus', () => {
   test('Done advances to the next task', async ({ page }) => {
     await loadSample(page)
-    await page.keyboard.press('3')
+    await page.keyboard.press('4')
     const title = page.locator('#focus-title')
     await expect(title).toBeVisible()
     const first = (await title.textContent()) ?? ''

@@ -20,6 +20,7 @@ export function Rail() {
   const setView = useStore((s) => s.setView)
   const setImportOpen = useStore((s) => s.setImportOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
+  const setQuickFindOpen = useStore((s) => s.setQuickFindOpen)
 
   return (
     <nav className="rail" aria-label="Main">
@@ -27,6 +28,13 @@ export function Rail() {
         <Logo />
         <span>Nearer</span>
       </div>
+      <button type="button" className="rail__find" onClick={() => setQuickFindOpen(true)} aria-keyshortcuts="Control+K">
+        <Icon name="search" size={18} />
+        <span>Find a task</span>
+        <span className="kbd" aria-hidden="true">
+          Ctrl K
+        </span>
+      </button>
       <ul className="rail__views">
         {VIEW_ITEMS.map((item, i) => (
           <li key={item.view}>

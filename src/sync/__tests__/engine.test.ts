@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { WrongPassphraseError, seal } from '../crypto'
 import type { SyncDoc } from '../doc'
-import {
+import { vaultContext,
   ConflictError,
   NoVaultError,
   VaultExistsError,
@@ -80,7 +80,7 @@ describe('createVault / unlockVault', () => {
   it('refuses a vault written in an unknown document format', async () => {
     const backend = new MemoryBackend()
     const { key } = await createVault(backend, PASS, makeDoc(), FAST)
-    backend.writeDirect(await seal(key, { v: 2, areas: [], tasks: [], tombstones: [] }))
+    backend.writeDirect(await seal(key, { v: 2, areas: [], tasks: [], tombstones: [] }, vaultContext(undefined, 2)))
     await expect(unlockVault(backend, PASS, OPTS)).rejects.toBeInstanceOf(VaultFormatError)
   })
 })
@@ -165,7 +165,7 @@ describe('syncOnce', () => {
     const backend = new MemoryBackend()
     const a = await createVault(backend, PASS, makeDoc(), FAST)
     const docB = makeDoc({ tasks: [makeTask('from-b', { updatedAt: 300 })] })
-    const sealedB = await seal(a.key, docB)
+    const sealedB = await seal(a.key, docB, vaultContext(undefined, 2))
     backend.beforeUpdate = () => {
       backend.beforeUpdate = undefined
       backend.writeDirect(sealedB)
@@ -184,11 +184,13 @@ describe('syncOnce', () => {
   it('rethrows ConflictError after exhausting retries', async () => {
     const backend = new MemoryBackend()
     const { key } = await createVault(backend, PASS, makeDoc(), FAST)
-    const noise = await seal(key, makeDoc({ tasks: [makeTask('noise', { updatedAt: 1 })] }))
+    // Another device writes before every attempt; each write is sealed for the version it creates.
+    const noiseDoc = makeDoc({ tasks: [makeTask('noise', { updatedAt: 1 })] })
+    const noise = await Promise.all([2, 3, 4].map((v) => seal(key, noiseDoc, vaultContext(undefined, v))))
     let attempts = 0
     backend.beforeUpdate = () => {
+      backend.writeDirect(noise[attempts])
       attempts += 1
-      backend.writeDirect(noise)
     }
 
     const local = makeDoc({ tasks: [makeTask('mine', { updatedAt: 9 })] })
@@ -211,7 +213,7 @@ describe('syncOnce', () => {
   it('never overwrites a vault written in an unknown format', async () => {
     const backend = new MemoryBackend()
     const { key } = await createVault(backend, PASS, makeDoc(), FAST)
-    backend.writeDirect(await seal(key, { v: 2, areas: [], tasks: [], tombstones: [] }))
+    backend.writeDirect(await seal(key, { v: 2, areas: [], tasks: [], tombstones: [] }, vaultContext(undefined, 2)))
     const versionBefore = (await backend.getVault())?.version
     await expect(syncOnce(backend, key, makeDoc({ tasks: [makeTask('t1')] }), NOW)).rejects.toBeInstanceOf(
       VaultFormatError,
@@ -222,7 +224,7 @@ describe('syncOnce', () => {
   it('rejects a corrupt remote payload instead of treating it as empty', async () => {
     const backend = new MemoryBackend()
     const { key } = await createVault(backend, PASS, makeDoc(), FAST)
-    backend.writeDirect(await seal(key, 'just a string'))
+    backend.writeDirect(await seal(key, 'just a string', vaultContext(undefined, 2)))
     await expect(syncOnce(backend, key, makeDoc(), NOW)).rejects.toBeInstanceOf(VaultFormatError)
   })
 })
@@ -262,5 +264,22 @@ describe('MemoryBackend', () => {
   it('rejects updates when there is no vault', async () => {
     const backend = new MemoryBackend()
     await expect(backend.updateVault({ iv: '', ciphertext: '' }, 1)).rejects.toBeInstanceOf(NoVaultError)
+  })
+})
+
+describe('rollback and swap protection', () => {
+  it('refuses a vault older than the version this device has seen', async () => {
+    const backend = new MemoryBackend()
+    const { key, record } = await createVault(backend, PASS, makeDoc(), FAST)
+    await expect(syncOnce(backend, key, makeDoc(), NOW, 0, record.version + 1)).rejects.toBeInstanceOf(VaultFormatError)
+  })
+
+  it('rejects an old ciphertext relabelled with a newer version', async () => {
+    const backend = new MemoryBackend()
+    const { key } = await createVault(backend, PASS, makeDoc(), FAST)
+    const v1 = await backend.getVault()
+    await syncOnce(backend, key, makeDoc({ tasks: [makeTask('new')] }), NOW)
+    backend.tamper({ iv: v1?.iv, ciphertext: v1?.ciphertext })
+    await expect(syncOnce(backend, key, makeDoc(), NOW)).rejects.toBeInstanceOf(WrongPassphraseError)
   })
 })

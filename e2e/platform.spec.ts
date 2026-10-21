@@ -53,7 +53,7 @@ test.describe('mobile layout', () => {
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden()
     expect(await scrollWidth()).toBeLessThanOrEqual(375)
 
-    for (const view of ['List', 'Focus', 'Reset']) {
+    for (const view of ['Map', 'List', 'Focus', 'Reset']) {
       await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: view }).click()
       expect(await scrollWidth(), `${view} view`).toBeLessThanOrEqual(375)
     }

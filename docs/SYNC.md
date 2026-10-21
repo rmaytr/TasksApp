@@ -32,8 +32,10 @@ approximate size of your encrypted data.
 3. **Other devices:** sign in, type the same passphrase, and your data is decrypted and merged
    with anything already on that device.
 4. The derived key is stored on each device as a **non-extractable** `CryptoKey` in IndexedDB,
-   so you don't retype the passphrase. Signing out deletes it.
-5. **Forgotten passphrase = encrypted backup is unrecoverable.** Your local copy still works;
+   so you don't retype the passphrase. Any sign-out deletes it.
+5. Each ciphertext is authenticated together with `owner id + version`, and every device remembers
+   the newest version it has seen, so the server can't hand you another user's row or an old copy.
+6. **Forgotten passphrase = encrypted backup is unrecoverable.** Your local copy still works;
    you can reset the vault (upload a fresh one with a new passphrase).
 
 ### Merging

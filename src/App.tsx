@@ -11,6 +11,7 @@ import { TopBar } from './components/TopBar'
 import { Welcome } from './components/Welcome'
 import { AccountDialog } from './components/AccountDialog'
 import { NewAreaDialog } from './components/NewAreaDialog'
+import { QuickFind } from './components/QuickFind'
 import { MapView } from './map/MapView'
 import { RadarView } from './radar/RadarView'
 import { useStore } from './store/useStore'
@@ -50,6 +51,7 @@ export default function App() {
       <SettingsDialog />
       <NewAreaDialog />
       <AccountDialog />
+      <QuickFind />
       <Toast />
       {showWelcome && <Welcome />}
     </div>

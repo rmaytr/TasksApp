@@ -12,6 +12,19 @@ Nearer is two independent pieces:
 Already set up: every push to `main` runs tests, builds with `VITE_BASE=/TasksApp/` and deploys.
 Pages is set to **Source: GitHub Actions** (repo Settings → Pages).
 
+## Before turning on sync: give Nearer its own origin
+
+GitHub Pages serves **every** project of an account from one origin (`rmaytr.github.io`), so any other
+site you publish there can read Nearer's browser storage, including the sync session and the
+device's vault key. That's fine for the local-only app, but **move Nearer to its own origin before
+inviting friends to sync**. The free option is Cloudflare Pages:
+
+1. <https://dash.cloudflare.com> → *Workers & Pages* → *Create* → *Pages* → *Connect to Git* → pick
+   `rmaytr/TasksApp`.
+2. Build command `npm run build`, output directory `dist`, and set the env vars from step 6 below
+   (leave `VITE_BASE` unset: the site lives at the root of `https://<name>.pages.dev`).
+3. Use that `pages.dev` URL (or a custom domain later) as the Site URL in Supabase.
+
 ## 2. Sync (Supabase), about 15 minutes
 
 > You need to do these steps yourself. They involve creating an account and handling project keys.
@@ -29,12 +42,14 @@ Pages is set to **Source: GitHub Actions** (repo Settings → Pages).
      heavily rate-limited. To email friends, set up custom SMTP under *Authentication → Emails → SMTP
      Settings*. [Resend](https://resend.com) has a free tier: verify a sender domain (or use their
      test domain for yourself) and paste its SMTP host, user and password there.
-4. **URLs:** under *Authentication → URL Configuration*, set Site URL to
-   `https://rmaytr.github.io/TasksApp/`, and add `http://localhost:5173/` and `http://localhost:5174/`
+4. **URLs:** under *Authentication → URL Configuration*, set Site URL to your Nearer origin
+   (e.g. `https://nearer.pages.dev/`), and add `http://localhost:5173/` and `http://localhost:5174/`
    to Redirect URLs for local testing.
-5. **Keep it friends-only (recommended):** under *Authentication → Sign In / Providers*, turn off
-   **Allow new users to sign up**. Then invite each friend from *Authentication → Users → Invite user*.
-   Anyone else who tries gets "Nearer is invite-only for now".
+5. **Keep it friends-only (the default):** under *Authentication → Sign In / Providers*, turn off
+   **Allow new users to sign up**, then invite each friend (and yourself) from *Authentication → Users →
+   Invite user*. The app also never creates accounts from the sign-in form unless you set
+   `VITE_INVITE_ONLY=false`. While you're there, set the email OTP expiry to 10 minutes or less and keep
+   anonymous sign-ins **disabled**.
 6. **Connect the app:** in *Project Settings → API*, copy the **Project URL** and the **anon / publishable
    key**. The publishable key is designed to be public: RLS is what protects data. **Never** use the
    `service_role` / secret key in the app. In GitHub go to *repo Settings → Secrets and variables →
@@ -52,7 +67,9 @@ Create `TasksApp/.env.local` (git-ignored) with the same two `VITE_SUPABASE_*` v
 
 ## Checklist before sharing with friends
 
+- [ ] Nearer runs on its own origin (Cloudflare Pages `*.pages.dev` or a custom domain), not `github.io`
 - [ ] RLS shows enabled on `vaults`; `anon` has no grants (the migration revokes them)
+- [ ] Supabase *Advisors → Security* shows no warnings for `vaults`
 - [ ] Sign-ups off; friends invited individually
 - [ ] Custom SMTP configured and a test code received
 - [ ] You signed in on two devices, created a passphrase on one, unlocked on the other, and saw edits sync

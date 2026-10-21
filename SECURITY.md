@@ -12,13 +12,18 @@ Please open a private security advisory on GitHub
 - **End-to-end encryption for sync.** AES-GCM-256 with a key derived in the browser from the user's
   passphrase (PBKDF2-SHA-256, 600k iterations, 16-byte random salt, 96-bit random IV per write,
   fixed additional authenticated data). The key is stored as a non-extractable `CryptoKey`.
-  The client refuses vaults whose KDF settings are weaker than 100k iterations, so a hostile server
-  cannot downgrade them.
+  The client refuses vaults whose KDF settings are outside 100k–2M iterations. Each ciphertext's
+  authenticated data binds it to its owner and version, and each device remembers the highest version
+  it has synced, so a server can't swap rows between users or quietly roll a vault back.
+  Passphrases need 12+ characters, enough variety, and no common passwords.
 - **Server isolation.** Postgres Row Level Security limits every row to `auth.uid() = user_id`;
   `anon` has no grants; a trigger forces versions to increase by exactly one and prevents changing
   the owner. Account deletion is self-service via a `security definer` function scoped to the caller.
 - **Passwordless auth.** One-time email codes or OAuth through Supabase Auth; the app never handles
-  passwords. Sign-ups can be disabled for invite-only use.
+  passwords. Invite-only by default (the sign-in form never creates accounts). Any sign-out, including
+  from another tab or a revoked session, deletes the device's vault key; a different account signing
+  in on the same device first clears the previous account's local tasks. Builds refuse to ship a
+  service-role/secret key.
 - **Browser hardening.** Production builds ship a Content Security Policy (`default-src 'self'`,
   `object-src 'none'`, `connect-src` limited to the configured Supabase origin, hashed inline
   script). No `dangerouslySetInnerHTML`, no `eval`. Imported files are size- and line-capped and
@@ -28,8 +33,10 @@ Please open a private security advisory on GitHub
 
 - Anyone with your unlocked device can read your tasks (as with any app).
 - GitHub Pages serves all of an account's project sites from one origin (`rmaytr.github.io`), so
-  other sites under that account share the browser storage origin. Move to a custom domain before
-  any public launch.
+  other sites under that account share the browser storage origin. **Sync must run on its own origin**
+  (Cloudflare Pages `*.pages.dev` or a custom domain); see docs/DEPLOY.md.
+- PBKDF2 is the only KDF WebCrypto offers natively; a weak passphrase can still be brute-forced
+  offline by whoever holds the ciphertext. Argon2id (WASM) is a possible upgrade.
 - A `<meta>` CSP cannot set `frame-ancestors`; add it as a header once hosting supports headers
   (e.g. Cloudflare Pages).
 - If you forget your passphrase, the encrypted backup cannot be recovered by anyone.

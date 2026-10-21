@@ -1,4 +1,4 @@
-import { addDays, fromISODate, horizonForDue, toISODate, todayISO } from '../lib/dates'
+import { addDays, daysBetween, fromISODate, horizonForDue, toISODate, todayISO } from '../lib/dates'
 import type { Repeat, Task } from './types'
 
 export const REPEAT_LABEL: Record<Repeat, string> = {
@@ -8,28 +8,48 @@ export const REPEAT_LABEL: Record<Repeat, string> = {
   monthly: 'Every month',
 }
 
-function advance(iso: string, repeat: Exclude<Repeat, 'none'>): string {
-  if (repeat === 'daily') return addDays(iso, 1)
-  if (repeat === 'weekly') return addDays(iso, 7)
+/** `anchor` moved `k` months forward, clamped to the month's last day (Jan 31 → Feb 28 → Mar 31). */
+function addMonths(anchor: string, k: number): string {
+  const a = fromISODate(anchor)
+  const first = new Date(a.getFullYear(), a.getMonth() + k, 1)
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
+  first.setDate(Math.min(a.getDate(), lastDay))
+  return toISODate(first)
+}
+
+function monthIndex(iso: string): number {
   const d = fromISODate(iso)
-  const day = d.getDate()
-  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-  // Clamp to the month's last day (Jan 31 → Feb 28), never spill into the month after.
-  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
-  next.setDate(Math.min(day, lastDay))
-  return toISODate(next)
+  return d.getFullYear() * 12 + d.getMonth()
+}
+
+/** The first occurrence strictly after both the current due date and today. */
+export function nextDue(repeat: Exclude<Repeat, 'none'>, due: string, anchor: string, today: string): string {
+  if (repeat !== 'monthly') {
+    const step = repeat === 'daily' ? 1 : 7
+    const gap = daysBetween(due, today)
+    // Jump straight past today instead of stepping one interval at a time.
+    const n = gap < 0 ? 1 : Math.floor(gap / step) + 1
+    return addDays(due, n * step)
+  }
+  // Months are counted from the anchor so a month-end date never drifts to the 28th.
+  let k = Math.max(monthIndex(due), monthIndex(today)) - monthIndex(anchor)
+  let next = addMonths(anchor, k)
+  while (next <= due || next <= today) next = addMonths(anchor, ++k)
+  return next
 }
 
 /**
  * The next copy of a repeating task once the current one is done: same content,
- * steps unchecked, due date moved forward past today.
+ * steps unchecked, due date moved forward past today. `repeatOf` links it to the
+ * task that spawned it so un-checking that task can withdraw it.
  */
 export function nextOccurrence(task: Task, now: Date, newId: () => string): Task | null {
   const repeat = task.repeat ?? 'none'
   if (repeat === 'none') return null
   const today = todayISO(now)
-  let due = advance(task.due ?? today, repeat)
-  while (due <= today) due = advance(due, repeat)
+  const base = task.due ?? today
+  const anchor = task.repeatAnchor ?? base
+  const due = nextDue(repeat, base, anchor, today)
   const time = now.getTime()
   return {
     ...task,
@@ -42,5 +62,7 @@ export function nextOccurrence(task: Task, now: Date, newId: () => string): Task
     createdAt: time,
     updatedAt: time,
     spentMinutes: 0,
+    repeatOf: task.id,
+    ...(repeat === 'monthly' && { repeatAnchor: anchor }),
   }
 }

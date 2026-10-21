@@ -16,6 +16,7 @@ const SHORTCUTS: readonly [string, string][] = [
   ['[ ]', 'On a radar dot: pull closer, push out'],
   ['z', 'Undo the last change'],
   ['Esc', 'Close the open task'],
+  ['?', 'Show this list'],
 ]
 
 const dateStamp = (): string => new Date().toISOString().slice(0, 10)

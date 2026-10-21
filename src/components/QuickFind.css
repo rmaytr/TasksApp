@@ -1,0 +1,62 @@
+.find {
+  gap: 10px;
+}
+
+.find__input {
+  min-height: 46px;
+  font-size: var(--step-1);
+}
+
+.find__results {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: min(50dvh, 460px);
+  overflow-y: auto;
+}
+
+.find__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+
+.find__item .dot {
+  background: var(--c);
+}
+
+.find__item[aria-selected='true'] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--c);
+}
+
+.find__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.find__title.is-done {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+.find__meta {
+  flex: none;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+
+.find__empty,
+.find__hint {
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}

@@ -128,7 +128,18 @@ export function MapView() {
   }
 
   return (
-    <div className="map map--mindmap" ref={containerRef} {...handlers}>
+    <div
+      className="map map--mindmap"
+      ref={containerRef}
+      {...handlers}
+      onScroll={(e) => {
+        const el = e.currentTarget
+        if (!el.scrollLeft && !el.scrollTop) return
+        const { scrollLeft, scrollTop } = el
+        el.scrollTo(0, 0)
+        setTransform((t) => ({ ...t, x: t.x - scrollLeft, y: t.y - scrollTop }))
+      }}
+    >
       <h1 className="visually-hidden">Map</h1>
       <div
         className="map__canvas"

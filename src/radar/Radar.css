@@ -356,9 +356,15 @@
 }
 
 @media (max-width: 760px) {
+  /* Pinch zooms on phones; every task is also in the list under the radar. */
   .radar__controls {
-    right: 10px;
-    bottom: 10px;
+    display: none;
+  }
+
+  .radar__new-area {
+    top: 6px;
+    right: 8px;
+    min-height: 34px;
   }
 
   .radar__legend {
@@ -399,4 +405,9 @@
   position: relative;
   inset: auto;
   height: min(100vw, 62dvh);
+}
+
+.radar-wrap {
+  position: absolute;
+  inset: 0;
 }

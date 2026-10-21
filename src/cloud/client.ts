@@ -6,11 +6,17 @@ let clientPromise: Promise<SupabaseClient> | null = null
 /** Lazily loads supabase-js so people who never sign in never download it. */
 export function getClient(): Promise<SupabaseClient> {
   if (!cloudEnabled) return Promise.reject(new Error('Sync is not set up for this copy of Nearer.'))
-  clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) =>
-    createClient(cloudConfig.url, cloudConfig.anonKey, {
-      auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    }),
-  )
+  clientPromise ??= import('@supabase/supabase-js')
+    .then(({ createClient }) =>
+      createClient(cloudConfig.url, cloudConfig.anonKey, {
+        auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      }),
+    )
+    .catch((error: unknown) => {
+      // Don't cache a failed download (e.g. offline at startup); the next call retries.
+      clientPromise = null
+      throw error
+    })
   return clientPromise
 }
 
@@ -29,7 +35,11 @@ export async function currentSession(): Promise<Session | null> {
 /** Emails a one-time sign-in code (and link). No password exists anywhere. */
 export async function sendSignInCode(email: string): Promise<void> {
   const client = await getClient()
-  const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: returnUrl() } })
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    // Invite-only deployments never create accounts from the sign-in form.
+    options: { emailRedirectTo: returnUrl(), shouldCreateUser: !cloudConfig.inviteOnly },
+  })
   if (error) throw new Error(friendlyAuthError(error.message))
 }
 

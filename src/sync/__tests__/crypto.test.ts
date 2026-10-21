@@ -166,7 +166,9 @@ describe('deriveKey', () => {
 describe('validatePassphrase', () => {
   it('accepts a reasonable passphrase', () => {
     expect(validatePassphrase('correct horse battery')).toBeNull()
-    expect(validatePassphrase('0123456789')).toBeNull()
+    expect(validatePassphrase('purple tram oboe')).toBeNull()
+    expect(validatePassphrase('0123456789')).toEqual(expect.any(String))
+    expect(validatePassphrase('mypassword123')).toEqual(expect.any(String))
   })
 
   it('rejects short passphrases', () => {
@@ -186,7 +188,17 @@ describe('validatePassphrase', () => {
   })
 
   it('counts code points, not UTF-16 units', () => {
-    expect(validatePassphrase('😀😁😂🤣😃😄😅😆😉')).toEqual(expect.any(String)) // 9 emoji
-    expect(validatePassphrase('😀😁😂🤣😃😄😅😆😉😊')).toBeNull() // 10 emoji
+    expect(validatePassphrase('😀😁😂🤣😃😄😅😆😉😊😋')).toEqual(expect.any(String)) // 11 emoji
+    expect(validatePassphrase('😀😁😂🤣😃😄😅😆😉😊😋😎')).toBeNull() // 12 emoji
+  })
+})
+
+describe('context binding', () => {
+  it('only opens with the same context it was sealed with', async () => {
+    const key = await deriveKey('purple tram oboe', randomSalt(), 1000)
+    const sealed = await seal(key, { x: 1 }, 'user-a|v3')
+    expect(await open(key, sealed, 'user-a|v3')).toEqual({ x: 1 })
+    await expect(open(key, sealed, 'user-a|v2')).rejects.toBeInstanceOf(WrongPassphraseError)
+    await expect(open(key, sealed, 'user-b|v3')).rejects.toBeInstanceOf(WrongPassphraseError)
   })
 })

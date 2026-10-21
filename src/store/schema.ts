@@ -22,6 +22,8 @@ export const taskSchema = z.object({
   updatedAt: z.number(),
   spentMinutes: z.number().nonnegative().catch(0),
   repeat: z.enum(REPEATS).optional().catch(undefined),
+  repeatOf: z.string().optional().catch(undefined),
+  repeatAnchor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
 })
 
 export const areaSchema = z.object({

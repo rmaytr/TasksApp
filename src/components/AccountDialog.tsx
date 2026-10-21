@@ -200,7 +200,7 @@ function PassphraseFields({ onChange }: { onChange: (value: string | null) => vo
         Show passphrase
       </label>
       <p id="pass-hint" className={`account__fine${problem || mismatch ? ' is-bad' : ''}`}>
-        {problem ?? (mismatch ? 'The two entries don’t match.' : 'At least 10 characters. A short sentence is easy to remember and hard to guess.')}
+        {problem ?? (mismatch ? 'The two entries don’t match.' : 'At least 12 characters. Three or four unrelated words are easy to remember and hard to guess.')}
       </p>
     </>
   )
@@ -331,7 +331,13 @@ function Connected() {
         <button type="button" className="btn" disabled={busy || sync.status === 'syncing'} onClick={() => void run(syncNow)}>
           Sync now
         </button>
-        <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void run(() => signOutCloud({ wipeDevice: false }))}>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          disabled={busy}
+          title="Your tasks stay on this device"
+          onClick={() => void run(() => signOutCloud({ wipeDevice: false }))}
+        >
           Sign out
         </button>
         <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void run(() => signOutCloud({ wipeDevice: true }))}>

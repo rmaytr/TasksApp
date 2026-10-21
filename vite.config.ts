@@ -11,7 +11,13 @@ const base = process.env.VITE_BASE ?? '/'
 // Sync (optional) talks to exactly one Supabase project; nothing else is reachable.
 const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim() ?? ''
 const supabaseOrigin = supabaseUrl.startsWith('https://') ? new URL(supabaseUrl).origin : ''
-const connectSrc = ["'self'", supabaseOrigin, supabaseOrigin.replace('https://', 'wss://')].filter(Boolean).join(' ')
+const connectSrc = ["'self'", supabaseOrigin].filter(Boolean).join(' ')
+
+// A service-role / secret key in a VITE_ variable would be published to every visitor.
+const anonKey = process.env.VITE_SUPABASE_ANON_KEY ?? ''
+if (anonKey.startsWith('sb_secret_') || /service_role/.test(Buffer.from(anonKey.split('.')[1] ?? '', 'base64').toString())) {
+  throw new Error('VITE_SUPABASE_ANON_KEY is a secret/service-role key. Use the anon or publishable key.')
+}
 
 const CSP = [
   "default-src 'self'",

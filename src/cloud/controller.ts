@@ -10,12 +10,13 @@ import {
   VaultExistsError,
   VaultFormatError,
   type SyncBackend,
+  type VaultSession,
 } from '../sync/engine'
 import { mergeDocs } from '../sync/merge'
 import { useStore } from '../store/useStore'
 import { currentSession, deleteAccount, getClient, signOut } from './client'
 import { cloudEnabled } from './config'
-import { forgetVaultKey, loadVaultKey, saveVaultKey } from './keyStore'
+import { forgetVaultKey, loadLastUser, loadVaultKey, saveLastUser, saveVaultKey, type StoredVaultKey } from './keyStore'
 import { SupabaseBackend } from './supabaseBackend'
 
 const PUSH_DELAY_MS = 2000
@@ -25,7 +26,7 @@ interface Connection {
   client: SupabaseClient
   userId: string
   backend: SyncBackend
-  key: CryptoKey | null
+  vault: StoredVaultKey | null
 }
 
 let conn: Connection | null = null
@@ -34,6 +35,8 @@ let again = false
 let applying = false
 let pushTimer: ReturnType<typeof setTimeout> | null = null
 let started = false
+let authSubscribed = false
+let connecting: Promise<void> | null = null
 
 const setSync = (patch: Parameters<ReturnType<typeof useStore.getState>['setSync']>[0]): void =>
   useStore.getState().setSync(patch)
@@ -53,83 +56,123 @@ function mightBeSignedIn(): boolean {
   }
 }
 
+/** Wakes sync up: reconnects after a failed start, otherwise pulls and pushes. */
+function nudge(): void {
+  if (!conn && mightBeSignedIn()) void connect()
+  else void syncNow()
+}
+
 /** Called once at startup. Loads the Supabase client only for people who have signed in before. */
-export async function initCloud(): Promise<void> {
+export function initCloud(): void {
   if (!cloudEnabled || started) return
   started = true
   setSync({ status: 'signed-out' })
-  if (mightBeSignedIn()) await connect()
-  window.addEventListener('online', () => void syncNow())
+  // Listeners first, so a slow or failed first connection still recovers later.
+  window.addEventListener('online', nudge)
+  window.addEventListener('offline', () => conn && setSync({ status: 'offline' }))
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') void syncNow()
+    if (document.visibilityState === 'visible') nudge()
   })
-  setInterval(() => void syncNow(), POLL_MS)
+  setInterval(() => {
+    if (document.visibilityState === 'visible') nudge()
+  }, POLL_MS)
   useStore.subscribe((state, prev) => {
     const changed = state.tasks !== prev.tasks || state.areas !== prev.areas || state.tombstones !== prev.tombstones
-    if (!changed || applying || !conn?.key) return
+    if (!changed || applying || !conn?.vault) return
     if (pushTimer) clearTimeout(pushTimer)
     pushTimer = setTimeout(() => void syncNow(), PUSH_DELAY_MS)
   })
+  if (mightBeSignedIn()) void connect()
 }
 
-/** Loads the client, restores any session and listens for sign-in/sign-out. */
-export async function connect(): Promise<void> {
+/** Loads the client, restores any session and (once) listens for sign-in/sign-out. */
+export function connect(): Promise<void> {
+  connecting ??= doConnect().finally(() => {
+    connecting = null
+  })
+  return connecting
+}
+
+async function doConnect(): Promise<void> {
   try {
     const client = await getClient()
-    client.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session && session.user.id !== conn?.userId) void attach(client, session)
-      if (event === 'SIGNED_OUT') detach()
-    })
+    if (!authSubscribed) {
+      authSubscribed = true
+      client.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && session.user.id !== conn?.userId) void attach(client, session)
+        if (event === 'SIGNED_OUT') void handleSignedOut()
+      })
+    }
     const session = await currentSession()
-    if (session) await attach(client, session)
+    if (session && session.user.id !== conn?.userId) await attach(client, session)
   } catch (error) {
-    setSync({ status: 'error', message: messageOf(error) })
+    setSync({ status: navigator.onLine ? 'error' : 'offline', message: messageOf(error) })
   }
 }
 
 async function attach(client: SupabaseClient, session: Session): Promise<void> {
   const userId = session.user.id
+  // A different account signing in on this device must not inherit the previous account's tasks.
+  const lastUser = await loadLastUser()
+  if (lastUser && lastUser !== userId) {
+    useStore.getState().wipeLocal()
+    useStore.getState().showToast('Cleared tasks from the previous account on this device.')
+  }
+  await saveLastUser(userId)
   const backend = new SupabaseBackend(client, userId)
-  conn = { client, userId, backend, key: (await loadVaultKey(userId)) ?? null }
+  const c: Connection = { client, userId, backend, vault: (await loadVaultKey(userId)) ?? null }
+  conn = c
   setSync({ email: session.user.email ?? null, message: null })
-  if (conn.key) {
+  if (c.vault) {
     setSync({ status: 'idle', vault: 'present' })
     await syncNow()
     return
   }
   setSync({ status: 'locked' })
   try {
-    setSync({ vault: (await backend.getVault()) ? 'present' : 'missing' })
+    const record = await backend.getVault()
+    if (conn === c) setSync({ vault: record ? 'present' : 'missing' })
   } catch (error) {
-    setSync({ status: 'error', message: messageOf(error) })
+    if (conn === c) setSync({ status: 'error', message: messageOf(error) })
   }
+}
+
+/** Signed out anywhere (this tab, another tab, revoked session): forget this device's key too. */
+async function handleSignedOut(): Promise<void> {
+  const c = conn
+  detach()
+  if (c) await forgetVaultKey(c.userId).catch(() => undefined)
 }
 
 function detach(): void {
   conn = null
+  if (pushTimer) clearTimeout(pushTimer)
   setSync({ status: 'signed-out', email: null, vault: 'unknown', lastSyncedAt: null, message: null })
 }
 
 /** Pull–merge–push once; concurrent calls coalesce into one follow-up run. */
 export function syncNow(): Promise<void> {
-  if (!conn?.key) return Promise.resolve()
+  if (!conn?.vault) return Promise.resolve()
   if (inFlight) {
     again = true
     return inFlight
   }
-  inFlight = runSync().finally(() => {
-    inFlight = null
-    if (again) {
-      again = false
-      void syncNow()
-    }
-  })
+  inFlight = runSync()
+    .catch(() => undefined)
+    .finally(() => {
+      inFlight = null
+      if (again) {
+        again = false
+        void syncNow()
+      }
+    })
   return inFlight
 }
 
 async function runSync(): Promise<void> {
   const c = conn
-  if (!c?.key) return
+  const vault = c?.vault
+  if (!c || !vault) return
   if (!navigator.onLine) {
     setSync({ status: 'offline' })
     return
@@ -137,11 +180,17 @@ async function runSync(): Promise<void> {
   setSync({ status: 'syncing', message: null })
   const before = localDoc()
   try {
-    const result = await syncOnce(c.backend, c.key, before, Date.now())
+    const result = await syncOnce(c.backend, vault.key, before, Date.now(), 3, vault.version)
+    // Signed out (or switched account) while the request was in flight: drop the result.
+    if (conn !== c) return
     if (result.changedLocal) applyMerged(before, result.doc)
+    if (result.record.version > vault.version) {
+      c.vault = { ...vault, version: result.record.version }
+      await saveVaultKey(c.userId, c.vault)
+    }
     setSync({ status: 'idle', lastSyncedAt: Date.now(), vault: 'present' })
   } catch (error) {
-    await handleSyncError(c, error)
+    if (conn === c) await handleSyncError(c, error)
   }
 }
 
@@ -160,16 +209,29 @@ function applyMerged(before: SyncDoc, merged: SyncDoc): void {
 }
 
 async function handleSyncError(c: Connection, error: unknown): Promise<void> {
-  if (error instanceof WrongPassphraseError) {
-    await forgetVaultKey(c.userId)
-    c.key = null
-    setSync({ status: 'locked', vault: 'present', message: 'Your passphrase was changed on another device. Enter the new one.' })
-  } else if (error instanceof NoVaultError) {
-    await forgetVaultKey(c.userId)
-    c.key = null
-    setSync({ status: 'locked', vault: 'missing', message: 'Your encrypted backup was removed. Set it up again.' })
-  } else {
-    setSync({ status: navigator.onLine ? 'error' : 'offline', message: messageOf(error) })
+  try {
+    if (error instanceof WrongPassphraseError) {
+      // Same salt means the passphrase didn't change: the data itself is damaged or tampered.
+      const record = await c.backend.getVault().catch(() => null)
+      if (record && c.vault && record.salt === c.vault.salt) {
+        setSync({
+          status: 'error',
+          message: 'Your cloud backup couldn’t be decrypted; it may be damaged. Tasks on this device are safe.',
+        })
+        return
+      }
+      await forgetVaultKey(c.userId)
+      c.vault = null
+      setSync({ status: 'locked', vault: 'present', message: 'Your passphrase was changed on another device. Enter the new one.' })
+    } else if (error instanceof NoVaultError) {
+      await forgetVaultKey(c.userId)
+      c.vault = null
+      setSync({ status: 'locked', vault: 'missing', message: 'Your encrypted backup was removed. Set it up again.' })
+    } else {
+      setSync({ status: navigator.onLine ? 'error' : 'offline', message: messageOf(error) })
+    }
+  } catch (inner) {
+    setSync({ status: 'error', message: messageOf(inner) })
   }
 }
 
@@ -179,8 +241,7 @@ async function handleSyncError(c: Connection, error: unknown): Promise<void> {
 export async function createEncryptedBackup(passphrase: string): Promise<void> {
   const c = requireConn()
   try {
-    const { key } = await createVault(c.backend, passphrase, localDoc())
-    await adoptKey(c, key)
+    await adopt(c, await createVault(c.backend, passphrase, localDoc()))
   } catch (error) {
     if (error instanceof VaultExistsError) setSync({ vault: 'present' })
     throw error
@@ -190,35 +251,40 @@ export async function createEncryptedBackup(passphrase: string): Promise<void> {
 /** Another device: decrypt the existing backup and merge it with what's here. */
 export async function unlockEncryptedBackup(passphrase: string): Promise<void> {
   const c = requireConn()
-  const { key } = await unlockVault(c.backend, passphrase)
-  await adoptKey(c, key)
+  await adopt(c, await unlockVault(c.backend, passphrase))
 }
 
 /** Forgotten passphrase: replace the cloud copy with this device's data under a new passphrase. */
 export async function resetEncryptedBackup(passphrase: string): Promise<void> {
   const c = requireConn()
-  const { key } = await resetVault(c.backend, passphrase, localDoc())
-  await adoptKey(c, key)
+  await adopt(c, await resetVault(c.backend, passphrase, localDoc()))
 }
 
-async function adoptKey(c: Connection, key: CryptoKey): Promise<void> {
-  c.key = key
-  await saveVaultKey(c.userId, key)
+async function adopt(c: Connection, session: VaultSession): Promise<void> {
+  if (conn !== c) return
+  c.vault = { key: session.key, salt: session.record.salt, version: session.record.version }
+  await saveVaultKey(c.userId, c.vault)
   setSync({ status: 'idle', vault: 'present', message: null })
   await syncNow()
 }
 
 export async function signOutCloud(options: { wipeDevice: boolean }): Promise<void> {
-  if (conn) await forgetVaultKey(conn.userId)
-  await signOut()
+  const c = conn
+  // Detach first so an in-flight sync can't write its result back after we clear things.
   detach()
-  if (options.wipeDevice) useStore.getState().applySynced({ areas: [], tasks: [], tombstones: [] })
+  await inFlight
+  if (c) await forgetVaultKey(c.userId)
+  await signOut()
+  if (options.wipeDevice) useStore.getState().wipeLocal()
 }
 
 export async function deleteCloudAccount(): Promise<void> {
   const c = requireConn()
-  await deleteAccount()
-  await forgetVaultKey(c.userId)
+  try {
+    await deleteAccount()
+  } finally {
+    await forgetVaultKey(c.userId)
+  }
   detach()
 }
 

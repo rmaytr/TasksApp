@@ -238,3 +238,27 @@
   left: auto;
   right: 7px;
 }
+
+.rail__find {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  margin-top: -8px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.rail__find span:nth-child(2) {
+  flex: 1;
+}
+
+.rail__find:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
+}

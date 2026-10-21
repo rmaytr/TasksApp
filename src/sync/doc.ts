@@ -33,8 +33,11 @@ const taskSchema = z
     updatedAt: z.number(),
     spentMinutes: z.number().nonnegative().catch(0),
     repeat: z.enum(REPEATS).optional().catch(undefined),
+    repeatOf: z.string().optional().catch(undefined),
+    repeatAnchor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
   })
-  .transform(({ repeat, ...rest }): Task => (repeat === undefined ? rest : { ...rest, repeat }))
+  // Drop undefined optionals so documents compare equal across devices.
+  .transform((task): Task => Object.fromEntries(Object.entries(task).filter(([, v]) => v !== undefined)) as unknown as Task)
 
 const areaSchema = z
   .object({

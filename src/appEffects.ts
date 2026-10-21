@@ -57,6 +57,12 @@ export const isModalOpen = (): boolean => document.querySelector('dialog[open]')
 export function useShortcuts(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // Ctrl/Cmd+K works everywhere, even while typing, like in most apps.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        if (!isModalOpen()) useStore.getState().setQuickFindOpen(true)
+        return
+      }
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
       if (isModalOpen()) return
       const s = useStore.getState()
@@ -70,6 +76,8 @@ export function useShortcuts(): void {
         s.setImportOpen(true)
       } else if (e.key === 'Escape' && s.selectedId) {
         s.select(null)
+      } else if (e.key === '?') {
+        s.setSettingsOpen(true)
       } else if (e.key === 'z' && s.undoSnapshot) {
         s.undo()
       }

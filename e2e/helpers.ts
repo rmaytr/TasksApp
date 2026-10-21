@@ -38,11 +38,12 @@ export function radarNodes(page: Page): Locator {
 }
 
 export function hub(page: Page): Locator {
-  return radar(page).getByRole('button', { name: /for today\. Open Focus/ })
+  return radar(page).getByRole('button', { name: /Open Focus$/ })
 }
 
 export async function hubCount(page: Page): Promise<number> {
   const label = (await hub(page).getAttribute('aria-label')) ?? ''
+  if (label.startsWith('Nothing due today')) return 0
   return Number(label.match(/^(\d+)/)?.[1] ?? Number.NaN)
 }
 

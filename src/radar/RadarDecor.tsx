@@ -1,6 +1,9 @@
-import type { KeyboardEvent } from 'react'
+import { useId, type KeyboardEvent } from 'react'
 import { HORIZON_LABEL } from '../model/types'
 import { HUB, OUTER, polar, RINGS, type Sector } from './layout'
+
+/** Each ring is a full disc, so tints stack: Today ends up ~5x darker than Someday. */
+const RING_TINT = 0.022
 
 /** Px size of ring names; divided by the scale so text stays the same size when zooming. */
 const RING_LABEL_PX = 11
@@ -21,24 +24,25 @@ interface RingsProps {
 /** Rings tinted strongest near the middle (sooner) and spokes between areas, in world space. */
 export function RadarRings({ sectors, scale }: RingsProps) {
   const fontSize = RING_LABEL_PX / scale
+  const uid = useId()
   return (
     <g className="radar__rings">
       <defs>
         {RINGS.map((ring) => (
           <path
             key={ring.horizon}
-            id={`ring-arc-${ring.horizon}`}
+            id={`${uid}-ring-${ring.horizon}`}
             // Text sits above its path, so run the path one line-height inside the ring's edge.
             d={arcPath(Math.max(ring.outer - (RING_LABEL_PX + 4) / scale, ring.inner + 4))}
           />
         ))}
       </defs>
-      {[...RINGS].reverse().map((ring, i) => (
+      {[...RINGS].reverse().map((ring) => (
         <circle
           key={ring.horizon}
           r={ring.outer}
           className="radar__ring"
-          style={{ fillOpacity: 0.035 + (i / (RINGS.length - 1)) * 0.11 }}
+          style={{ fillOpacity: RING_TINT }}
           vectorEffect="non-scaling-stroke"
         />
       ))}
@@ -50,7 +54,7 @@ export function RadarRings({ sectors, scale }: RingsProps) {
         })}
       {RINGS.map((ring) => (
         <text key={ring.horizon} className="radar__ring-label" fontSize={fontSize}>
-          <textPath href={`#ring-arc-${ring.horizon}`} startOffset="50%" textAnchor="middle">
+          <textPath href={`#${uid}-ring-${ring.horizon}`} startOffset="50%" textAnchor="middle">
             {HORIZON_LABEL[ring.horizon]}
           </textPath>
         </text>

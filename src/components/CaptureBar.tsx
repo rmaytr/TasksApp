@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { parseCapture } from '../lib/capture'
 import { resolveArea } from '../lib/classify'
-import { useAreaMap, useNow, areaStyle } from '../hooks'
+import { useAreaMap, useMediaQuery, useNow, areaStyle } from '../hooks'
 import { MAX_AREAS } from '../model/defaults'
 import { HORIZON_LABEL } from '../model/types'
 import { useStore } from '../store/useStore'
@@ -18,6 +18,7 @@ export function CaptureBar() {
   const addTask = useStore((s) => s.addTask)
   const showToast = useStore((s) => s.showToast)
   const areaMap = useAreaMap()
+  const phone = useMediaQuery('(max-width: 760px)')
   const now = useNow()
   const setNewAreaOpen = useStore((s) => s.setNewAreaOpen)
   // When the user creates an area from the chip, select it for the task being typed.
@@ -65,7 +66,7 @@ export function CaptureBar() {
         onKeyDown={(e) => {
           if (e.key === 'Escape') e.currentTarget.blur()
         }}
-        placeholder={PLACEHOLDER}
+        placeholder={phone ? 'Add a task…' : PLACEHOLDER}
         aria-label="New task"
         aria-describedby="capture-hint"
         autoComplete="off"

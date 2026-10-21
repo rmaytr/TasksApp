@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { formatDue } from '../lib/dates'
+import { extractLinks } from '../lib/links'
 import { areaStyle, useAreaMap, useNow, useReducedMotion } from '../hooks'
 import { compareUrgency, effectiveHorizon, isStale } from '../model/derive'
 import { MAX_AREAS } from '../model/defaults'
@@ -11,6 +12,9 @@ import { StepList } from './StepList'
 import './ListView.css'
 
 type Grouping = 'area' | 'ring'
+type Filter = 'all' | 'waiting' | 'high'
+
+const FILTER_LABEL: Record<Filter, string> = { all: 'All', waiting: 'Waiting', high: 'High priority' }
 
 interface Group {
   key: string
@@ -34,6 +38,7 @@ export function ListView() {
   const [grouping, setGrouping] = useState<Grouping>('area')
   const [query, setQuery] = useState('')
   const [showDone, setShowDone] = useState(false)
+  const [filter, setFilter] = useState<Filter>('all')
   const areas = useStore((s) => s.areas)
   const tasks = useStore((s) => s.tasks)
   const hidden = useStore((s) => s.prefs.hiddenAreas)
@@ -43,6 +48,7 @@ export function ListView() {
   const groups = useMemo((): Group[] => {
     const visible = tasks
       .filter((t) => (showDone || !t.done) && !hidden.includes(t.areaId) && matches(t, query))
+      .filter((t) => filter === 'all' || (filter === 'waiting' ? Boolean(t.waiting) : t.high))
       .sort((a, b) => Number(a.done) - Number(b.done) || compareUrgency(a, b, now))
     if (grouping === 'ring') {
       return HORIZONS.map((h) => ({
@@ -55,7 +61,7 @@ export function ListView() {
     return areas
       .filter((a) => !hidden.includes(a.id))
       .map((a) => ({ key: a.id, title: a.name, area: a, tasks: visible.filter((t) => t.areaId === a.id) }))
-  }, [tasks, areas, hidden, grouping, query, showDone, now])
+  }, [tasks, areas, hidden, grouping, query, showDone, filter, now])
 
   const total = groups.reduce((n, g) => n + g.tasks.length, 0)
 
@@ -80,6 +86,13 @@ export function ListView() {
             {(['area', 'ring'] as const).map((g) => (
               <button key={g} type="button" aria-pressed={grouping === g} onClick={() => setGrouping(g)}>
                 {g === 'area' ? 'By area' : 'By when'}
+              </button>
+            ))}
+          </div>
+          <div className="seg" role="group" aria-label="Show">
+            {(['all', 'waiting', 'high'] as const).map((f) => (
+              <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                {FILTER_LABEL[f]}
               </button>
             ))}
           </div>
@@ -159,6 +172,8 @@ export function Row({ task, now, showRing }: { task: Task; now: Date; showRing: 
   const area = useAreaMap().get(task.areaId)
   const reduce = useReducedMotion()
   const doneSteps = task.steps.filter((s) => s.done).length
+  const link = extractLinks(`${task.title}
+${task.notes}`)[0]
   const horizon = effectiveHorizon(task, now)
 
   return (
@@ -188,6 +203,13 @@ export function Row({ task, now, showRing }: { task: Task; now: Date; showRing: 
             <span className="tag" title={`Waiting on ${task.waiting}`}>
               Waiting<span className="visually-hidden"> on {task.waiting}</span>
             </span>
+          )}
+          {link && (
+            <a className="tag tag--link" href={link.url} target="_blank" rel="noopener noreferrer" title={link.url}>
+              <Icon name="link" size={12} />
+              <span className="visually-hidden">Open link: </span>
+              {link.host}
+            </a>
           )}
           {task.due && <span className="tag num">{formatDue(task.due, now)}</span>}
           {showRing && <span className="row__ring">{HORIZON_LABEL[horizon]}</span>}

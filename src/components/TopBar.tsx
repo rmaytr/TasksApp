@@ -8,6 +8,7 @@ import './TopBar.css'
 export function TopBar() {
   const setImportOpen = useStore((s) => s.setImportOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
+  const setQuickFindOpen = useStore((s) => s.setQuickFindOpen)
   return (
     <header className="topbar">
       <div className="topbar__brand" aria-hidden="true">
@@ -15,6 +16,9 @@ export function TopBar() {
       </div>
       <CaptureBar />
       <div className="topbar__actions">
+        <button type="button" className="icon-btn" onClick={() => setQuickFindOpen(true)} aria-label="Find a task">
+          <Icon name="search" />
+        </button>
         <SyncBadge compact />
         <button type="button" className="icon-btn" onClick={() => setImportOpen(true)} aria-label="Import tasks">
           <Icon name="import" />

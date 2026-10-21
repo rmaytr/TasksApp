@@ -137,11 +137,123 @@ fieldset.detail__group legend {
   border-color: color-mix(in srgb, var(--c) 50%, var(--rule));
 }
 
+/* Always reachable: the main actions stay pinned to the bottom of the panel. */
 .detail__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding-top: 6px;
+  margin: 0 -20px -28px;
+  padding: 12px 20px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.seg--rings {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.seg--rings button {
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.detail__due {
+  display: grid;
+  gap: 6px;
+}
+
+.detail__chips,
+.detail__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail__chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  font-weight: 540;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.detail__chip:hover {
+  color: var(--ink);
+  border-color: var(--ink-2);
+}
+
+.detail__chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+.detail__chip--pick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.detail__chip--pick:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.detail__chip--clear {
+  padding: 0 8px;
+}
+
+.detail__chip--link {
+  border-style: dashed;
+  color: var(--ink);
+}
+
+.detail__select {
+  width: auto;
+  min-height: 34px;
+  padding: 2px 8px;
+}
+
+.detail__optional {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail__optional > .detail__group {
+  flex-basis: 100%;
+}
+
+.detail__add-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px dashed var(--field-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}
+
+.detail__add-field:hover {
+  color: var(--ink);
+  background: var(--surface-2);
 }
 
 .detail__meta {

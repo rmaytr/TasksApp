@@ -273,3 +273,19 @@
   background: var(--surface);
   color: var(--ink);
 }
+
+.tag--link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 14ch;
+  overflow: hidden;
+  color: var(--ink);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag--link:hover {
+  text-decoration: underline;
+}

@@ -60,6 +60,7 @@ interface UiState {
   /** The "new area" dialog, reachable from the rail, radar, map and list. */
   newAreaOpen: boolean
   accountOpen: boolean
+  quickFindOpen: boolean
   /** Task pinned in Focus; null means "whatever is nearest". */
   focusTaskId: string | null
   sync: SyncInfo
@@ -79,6 +80,8 @@ interface Actions {
   updateArea: (id: string, patch: Partial<Omit<Area, 'id' | 'updatedAt'>>) => void
   deleteArea: (id: string, moveTasksTo: string) => void
   clearEverything: () => void
+  /** Removes everything from this device (sign-out on a shared computer). No undo, no tombstones. */
+  wipeLocal: () => void
   /** Replaces data with a merged copy from sync: no undo, no timestamp changes. */
   applySynced: (doc: { areas: Area[]; tasks: Task[]; tombstones: Tombstone[] }) => void
   setSync: (patch: Partial<SyncInfo>) => void
@@ -92,6 +95,7 @@ interface Actions {
   setSettingsOpen: (open: boolean) => void
   setNewAreaOpen: (open: boolean) => void
   setAccountOpen: (open: boolean) => void
+  setQuickFindOpen: (open: boolean) => void
   startFocus: (id: string | null) => void
 }
 
@@ -158,6 +162,7 @@ export const useStore = create<StoreState>()(
         settingsOpen: false,
         newAreaOpen: false,
         accountOpen: false,
+        quickFindOpen: false,
         focusTaskId: null,
         sync: { status: 'off', email: null, lastSyncedAt: null, message: null, vault: 'unknown' },
 
@@ -200,7 +205,11 @@ export const useStore = create<StoreState>()(
           const task = get().tasks.find((t) => t.id === id)
           if (!task || task.done === done) return
           const now = new Date()
-          const next = done ? nextOccurrence(task, now, newId) : null
+          // A repeating task makes one next copy; re-checking it never makes a second.
+          const hasCopy = get().tasks.some((t) => t.repeatOf === id && !t.done)
+          const next = done && !hasCopy ? nextOccurrence(task, now, newId) : null
+          // Un-checking withdraws the copy it spawned, as long as nobody has touched that copy.
+          const spawned = done ? undefined : get().tasks.find((t) => t.repeatOf === id && !t.done && t.updatedAt === t.createdAt)
           const message = !done
             ? 'Marked as not done'
             : next?.due
@@ -209,6 +218,12 @@ export const useStore = create<StoreState>()(
           withUndo(message, () => {
             mapTask(id, (t) => touch(t, { done, doneAt: done ? Date.now() : null }))
             if (next) set((s) => ({ tasks: [...s.tasks, next] }))
+            if (spawned) {
+              set((s) => ({
+                tasks: s.tasks.filter((t) => t.id !== spawned.id),
+                tombstones: [...s.tombstones, tomb(spawned.id, 'task')],
+              }))
+            }
           })
           if (done) set({ lastCompleted: { id, areaId: task.areaId, at: Date.now() } })
         },
@@ -284,6 +299,19 @@ export const useStore = create<StoreState>()(
             })),
           ),
 
+        wipeLocal: () =>
+          set((s) => ({
+            areas: DEFAULT_AREAS.map((a) => ({ ...a })),
+            tasks: [],
+            tombstones: [],
+            selectedId: null,
+            focusTaskId: null,
+            undoSnapshot: null,
+            toast: null,
+            lastCompleted: null,
+            prefs: { ...s.prefs, hiddenAreas: [] },
+          })),
+
         applySynced: (doc) =>
           set((s) => ({
             ...invalidateUndo(),
@@ -298,13 +326,21 @@ export const useStore = create<StoreState>()(
         undo: () => {
           const { undoSnapshot: snap, toast } = get()
           if (!snap || toast?.id !== snap.toastId) return
-          // Undoing must also count as a new edit for sync, so re-stamp what it brings back.
+          // Undoing must also count as a new edit for sync, so re-stamp what it brings back,
+          // and leave tombstones for anything it removes (e.g. an import or a repeat's next copy)
+          // so another device or the cloud copy can't bring those back.
           const now = Date.now()
           const current = new Map(get().tasks.map((t) => [t.id, t]))
+          const keptTasks = new Set(snap.tasks.map((t) => t.id))
+          const keptAreas = new Set(snap.areas.map((a) => a.id))
+          const removed: Tombstone[] = [
+            ...get().tasks.filter((t) => !keptTasks.has(t.id)).map((t) => ({ id: t.id, kind: 'task' as const, at: now })),
+            ...get().areas.filter((a) => !keptAreas.has(a.id)).map((a) => ({ id: a.id, kind: 'area' as const, at: now })),
+          ]
           set((s) => ({
             areas: snap.areas.map((a) => ({ ...a, updatedAt: now })),
             tasks: snap.tasks.map((t) => (current.get(t.id) === t ? t : { ...t, updatedAt: now })),
-            tombstones: snap.tombstones,
+            tombstones: [...snap.tombstones, ...removed],
             prefs: { ...s.prefs, hiddenAreas: snap.hiddenAreas },
             undoSnapshot: null,
             toast: null,
@@ -315,13 +351,20 @@ export const useStore = create<StoreState>()(
         showToast: (message, undoable = false, sticky = false) =>
           set({ toast: { id: newId(), message, undoable, sticky } }),
         dismissToast: () => set({ toast: null, undoSnapshot: null }),
-        setView: (view) => set({ view }),
+        // Focus and Reset show one task at a time; an open detail panel there would just duplicate it.
+        setView: (view) =>
+          set((s) => ({
+            view,
+            selectedId: view === 'focus' || view === 'reset' ? null : s.selectedId,
+            toast: s.toast?.undoable || s.toast?.sticky ? s.toast : null,
+          })),
         select: (id) => set({ selectedId: id }),
         setPrefs: (patch) => set((s) => ({ prefs: { ...s.prefs, ...patch } })),
         setImportOpen: (open) => set({ importOpen: open }),
         setSettingsOpen: (open) => set({ settingsOpen: open }),
         setNewAreaOpen: (open) => set({ newAreaOpen: open }),
         setAccountOpen: (open) => set({ accountOpen: open }),
+        setQuickFindOpen: (open) => set({ quickFindOpen: open }),
         startFocus: (id) => set({ focusTaskId: id, view: 'focus', selectedId: null }),
       }
     },

@@ -20,6 +20,8 @@ export interface NewVault {
 
 /** Transport-agnostic storage of the single encrypted vault row. */
 export interface SyncBackend {
+  /** Stable id of the vault's owner; bound into each ciphertext so rows can't be swapped between users. */
+  readonly owner?: string
   getVault(): Promise<VaultRecord | null>
   /** Throws `VaultExistsError` if the user already has a vault. */
   createVault(rec: NewVault): Promise<VaultRecord>
@@ -61,7 +63,7 @@ export class VaultFormatError extends Error {
 /** Anything below this is refused on unlock: a hostile server could otherwise weaken the key. */
 export const MIN_ACCEPTED_ITERATIONS = 100_000
 /** Anything above this is refused on unlock: it would freeze the device. */
-export const MAX_ACCEPTED_ITERATIONS = 10_000_000
+export const MAX_ACCEPTED_ITERATIONS = 2_000_000
 
 export interface UnlockOptions {
   /** Lowest KDF iteration count to accept. Only tests should lower it. */
@@ -86,14 +88,24 @@ export interface SyncResult {
   pushed: boolean
 }
 
+/**
+ * Authenticated context for the ciphertext stored at `version`. A server that serves an old
+ * ciphertext under a newer version number, or another user's row, fails decryption.
+ */
+export function vaultContext(owner: string | undefined, version: number): string {
+  return `${owner ?? ''}|v${version}`
+}
+
 async function newVault(
+  backend: SyncBackend,
   passphrase: string,
   local: SyncDoc,
   iterations: number,
+  version: number,
 ): Promise<{ key: CryptoKey; vault: NewVault }> {
   const salt = randomSalt()
   const key = await deriveKey(passphrase, salt, iterations)
-  const sealed = await seal(key, local)
+  const sealed = await seal(key, local, vaultContext(backend.owner, version))
   return { key, vault: { salt, iterations, ...sealed } }
 }
 
@@ -103,7 +115,7 @@ export async function createVault(
   local: SyncDoc,
   iterations: number = KDF_ITERATIONS,
 ): Promise<VaultSession> {
-  const { key, vault } = await newVault(passphrase, local, iterations)
+  const { key, vault } = await newVault(backend, passphrase, local, iterations, 1)
   return { key, record: await backend.createVault(vault) }
 }
 
@@ -114,13 +126,14 @@ export async function resetVault(
   local: SyncDoc,
   iterations: number = KDF_ITERATIONS,
 ): Promise<VaultSession> {
-  const { key, vault } = await newVault(passphrase, local, iterations)
+  const current = await backend.getVault()
+  const { key, vault } = await newVault(backend, passphrase, local, iterations, (current?.version ?? 0) + 1)
   return { key, record: await backend.replaceVault(vault) }
 }
 
 /** Opens a vault payload and insists on the current document format (never "repairs" it to empty). */
-async function openDoc(key: CryptoKey, record: VaultRecord): Promise<SyncDoc> {
-  const raw = await open(key, { iv: record.iv, ciphertext: record.ciphertext })
+async function openDoc(key: CryptoKey, record: VaultRecord, owner: string | undefined): Promise<SyncDoc> {
+  const raw = await open(key, { iv: record.iv, ciphertext: record.ciphertext }, vaultContext(owner, record.version))
   const isCurrent = typeof raw === 'object' && raw !== null && !Array.isArray(raw) && (raw as { v?: unknown }).v === 1
   if (!isCurrent) {
     throw new VaultFormatError('This vault was written by a different version of Nearer. Update the app and try again.')
@@ -142,7 +155,7 @@ export async function unlockVault(
   if (record === null) throw new NoVaultError()
   assertSafeIterations(record.iterations, options.minIterations ?? MIN_ACCEPTED_ITERATIONS)
   const key = await deriveKey(passphrase, record.salt, record.iterations)
-  return { key, record, doc: await openDoc(key, record) }
+  return { key, record, doc: await openDoc(key, record, backend.owner) }
 }
 
 /**
@@ -155,10 +168,12 @@ export async function syncOnce(
   local: SyncDoc,
   now: number,
   maxRetries = 3,
+  /** Highest vault version this device has seen; anything older means the server rolled back. */
+  minVersion = 0,
 ): Promise<SyncResult> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await syncAttempt(backend, key, local, now)
+      return await syncAttempt(backend, key, local, now, minVersion)
     } catch (error) {
       if (!(error instanceof ConflictError) || attempt >= maxRetries) throw error
     }
@@ -170,13 +185,18 @@ async function syncAttempt(
   key: CryptoKey,
   local: SyncDoc,
   now: number,
+  minVersion: number,
 ): Promise<SyncResult> {
   const record = await backend.getVault()
   if (record === null) throw new NoVaultError()
-  const remote = await openDoc(key, record)
+  if (record.version < minVersion) {
+    throw new VaultFormatError('Your cloud backup is older than what this device already synced. Nothing was changed.')
+  }
+  const remote = await openDoc(key, record, backend.owner)
   const merged = mergeDocs(local, remote, now)
   const changedLocal = !docsEqual(merged, local)
   if (docsEqual(merged, remote)) return { doc: merged, record, changedLocal, pushed: false }
-  const updated = await backend.updateVault(await seal(key, merged), record.version)
+  const sealed = await seal(key, merged, vaultContext(backend.owner, record.version + 1))
+  const updated = await backend.updateVault(sealed, record.version)
   return { doc: merged, record: updated, changedLocal, pushed: true }
 }

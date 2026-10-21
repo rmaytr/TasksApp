@@ -7,10 +7,17 @@ export const KDF_ITERATIONS = 600_000
 
 const SALT_BYTES = 16
 const IV_BYTES = 12
-const MIN_PASSPHRASE_LENGTH = 10
+const MIN_PASSPHRASE_LENGTH = 12
+const MIN_DISTINCT_CHARS = 6
+/** Phrases people reach for first; refused even when long enough. */
+const COMMON = ['password', 'passphrase', 'qwerty', 'letmein', 'iloveyou', 'nearer', '123456', 'abcdef']
 const BASE64_CHUNK = 0x8000
-/** Binds every ciphertext to this app and format version. */
-const AAD = new TextEncoder().encode('nearer-vault-v1')
+/**
+ * Additional authenticated data binds every ciphertext to this app/format and, when given,
+ * to a context (owner + vault version) so a server can't swap or replay old ciphertexts.
+ */
+const aad = (context: string): Uint8Array<ArrayBuffer> =>
+  new TextEncoder().encode(context ? `nearer-vault-v1|${context}` : 'nearer-vault-v1')
 
 export interface Sealed {
   iv: string
@@ -75,10 +82,10 @@ export async function deriveKey(
   )
 }
 
-export async function seal(key: CryptoKey, data: unknown): Promise<Sealed> {
+export async function seal(key: CryptoKey, data: unknown, context = ''): Promise<Sealed> {
   const iv = randomBytes(IV_BYTES)
   const plain = new TextEncoder().encode(JSON.stringify(data))
-  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: AAD }, key, plain)
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aad(context) }, key, plain)
   return { iv: toBase64(iv), ciphertext: toBase64(new Uint8Array(cipher)) }
 }
 
@@ -86,19 +93,20 @@ async function decrypt(
   key: CryptoKey,
   iv: Uint8Array<ArrayBuffer>,
   data: Uint8Array<ArrayBuffer>,
+  context: string,
 ): Promise<ArrayBuffer> {
   try {
-    return await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: AAD }, key, data)
+    return await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: aad(context) }, key, data)
   } catch {
     throw new WrongPassphraseError()
   }
 }
 
-export async function open(key: CryptoKey, sealed: Sealed): Promise<unknown> {
+export async function open(key: CryptoKey, sealed: Sealed, context = ''): Promise<unknown> {
   const iv = fromBase64(sealed.iv)
   const data = fromBase64(sealed.ciphertext)
   if (iv.length !== IV_BYTES) throw new Error('Malformed initialization vector.')
-  const plain = await decrypt(key, iv, data)
+  const plain = await decrypt(key, iv, data, context)
   try {
     return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(plain)) as unknown
   } catch {
@@ -114,5 +122,10 @@ export function validatePassphrase(passphrase: string): string | null {
     return `Use at least ${MIN_PASSPHRASE_LENGTH} characters.`
   }
   if (new Set(chars).size === 1) return 'Do not repeat a single character.'
+  if (new Set(chars).size < MIN_DISTINCT_CHARS || /^\d+$/.test(passphrase)) {
+    return 'Too easy to guess. Try three or four unrelated words.'
+  }
+  const lower = passphrase.toLowerCase()
+  if (COMMON.some((w) => lower.includes(w))) return 'That contains a very common password. Try unrelated words.'
   return null
 }

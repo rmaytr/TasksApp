@@ -2,6 +2,15 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Sealed } from '../sync/crypto'
 import { ConflictError, VaultExistsError, type NewVault, type SyncBackend, type VaultRecord } from '../sync/engine'
 
+/** Matches the `ciphertext` length check in the migration. */
+const MAX_CIPHERTEXT = 5_000_000
+
+function assertFits(ciphertext: string): void {
+  if (ciphertext.length > MAX_CIPHERTEXT) {
+    throw new Error('Your tasks are too large to back up (over 5 MB). Remove old done tasks or long notes and try again.')
+  }
+}
+
 const COLUMNS = 'salt, kdf_iterations, iv, ciphertext, version, updated_at'
 
 interface VaultRow {
@@ -29,10 +38,13 @@ const toRecord = (row: VaultRow): VaultRecord => ({
 export class SupabaseBackend implements SyncBackend {
   private readonly client: SupabaseClient
   private readonly userId: string
+  /** Bound into every ciphertext's authenticated data (see `vaultContext`). */
+  readonly owner: string
 
   constructor(client: SupabaseClient, userId: string) {
     this.client = client
     this.userId = userId
+    this.owner = userId
   }
 
   async getVault(): Promise<VaultRecord | null> {
@@ -42,6 +54,7 @@ export class SupabaseBackend implements SyncBackend {
   }
 
   async createVault(rec: NewVault): Promise<VaultRecord> {
+    assertFits(rec.ciphertext)
     const { data, error } = await this.client
       .from('vaults')
       .insert({ user_id: this.userId, salt: rec.salt, kdf_iterations: rec.iterations, iv: rec.iv, ciphertext: rec.ciphertext })
@@ -53,6 +66,7 @@ export class SupabaseBackend implements SyncBackend {
   }
 
   async updateVault(sealed: Sealed, expectedVersion: number): Promise<VaultRecord> {
+    assertFits(sealed.ciphertext)
     const { data, error } = await this.client
       .from('vaults')
       .update({ iv: sealed.iv, ciphertext: sealed.ciphertext, version: expectedVersion + 1 })
@@ -66,6 +80,7 @@ export class SupabaseBackend implements SyncBackend {
   }
 
   async replaceVault(rec: NewVault): Promise<VaultRecord> {
+    assertFits(rec.ciphertext)
     const current = await this.getVault()
     if (!current) return this.createVault(rec)
     const { data, error } = await this.client

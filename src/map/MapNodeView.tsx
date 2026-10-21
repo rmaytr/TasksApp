@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { formatDue } from '../lib/dates'
 import { areaColor, areaTextColor } from '../hooks'
 import { effectiveHorizon, isStale } from '../model/derive'
@@ -143,6 +143,12 @@ function AddTaskNode({ areaId, areaName }: { areaId: string; areaName: string })
   const addTask = useStore((s) => s.addTask)
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState('')
+  const ghostRef = useRef<HTMLButtonElement>(null)
+  const wasEditing = useRef(false)
+  useEffect(() => {
+    if (!editing && wasEditing.current) ghostRef.current?.focus()
+    wasEditing.current = editing
+  }, [editing])
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
@@ -154,7 +160,7 @@ function AddTaskNode({ areaId, areaName }: { areaId: string; areaName: string })
 
   if (!editing) {
     return (
-      <button type="button" className="mnode__ghost" onClick={() => setEditing(true)}>
+      <button ref={ghostRef} type="button" className="mnode__ghost" onClick={() => setEditing(true)}>
         <Icon name="plus" size={14} /> Add to {areaName}
       </button>
     )

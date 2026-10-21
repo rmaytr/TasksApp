@@ -70,6 +70,10 @@ export interface Task {
   spentMinutes: number
   /** When done, a repeating task schedules its next copy. Old data has no field = 'none'. */
   repeat?: Repeat
+  /** Id of the task whose completion created this copy (lets "not done" withdraw it). */
+  repeatOf?: string
+  /** First due date of a monthly series, so month-end dates don't drift. */
+  repeatAnchor?: string
 }
 
 /** Shape produced by importers and the quick-capture parser before ids/timestamps exist. */

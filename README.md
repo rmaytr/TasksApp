@@ -15,11 +15,17 @@ distance**:
   (Classes, Orgs, Career, Projects, Learning, Life, or your own). Dot size is effort, a halo means high
   priority, a hollow dot is waiting on something, and faded dots haven't been touched in two weeks.
   Drag a dot to a different ring or wedge to move it.
-- **List.** Everything grouped by area or by ring, with search, inline steps and quick add.
+- **Map.** A mind map of everything: areas branch from the middle, tasks branch from areas,
+  steps from tasks. Add tasks or a new area right on the map. On phones it becomes an outline.
+- **List.** Everything grouped by area or by ring, with search, filters (waiting, high priority),
+  inline steps and quick add.
 - **Focus.** One task and its next step, with a 25-minute timer and an “I’ll do it…” prompt.
   Naming when and where you'll do something
   [roughly doubles follow-through](https://cancercontrol.cancer.gov/brp/research/constructs/implementation-intentions).
 - **Reset.** A three-minute weekly sweep: pull closer, keep, push out, done or drop, one card at a time.
+
+**Also:** repeating tasks (daily, weekly, monthly), one-tap due dates, links in notes become
+clickable chips, `Ctrl K` finds any task, and **New area** is one click away in every view.
 
 ## Getting your tasks in
 
@@ -55,20 +61,27 @@ Only `title` is required.
 
 ## Privacy
 
-Everything is stored in your browser (IndexedDB) on your device. There's no account, no server, no
-analytics and no cookies. Install it from your browser menu (“Install app” or “Add to Home Screen”)
+By default everything is stored in your browser (IndexedDB) on your device: no account, no
+analytics, no cookies. Install it from your browser menu (“Install app” or “Add to Home Screen”)
 to use it like a native app, offline.
+
+**Optional sync** (if the deployment has it turned on): sign in with a one-time email code and
+choose an encryption passphrase. Your tasks are encrypted on your device before upload, so the
+server, and whoever runs it, only ever stores ciphertext. Details: [docs/SYNC.md](docs/SYNC.md),
+[privacy policy](docs/PRIVACY.md), [SECURITY.md](SECURITY.md). Operators: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Keyboard
 
 | Key | Action |
 | --- | --- |
 | `/` or `n` | Add a task |
-| `1`–`4` | Radar, List, Focus, Reset |
+| `Ctrl K` | Find any task |
+| `1`–`5` | Radar, Map, List, Focus, Reset |
 | `i` | Import |
 | `[` `]` | On a radar dot: pull closer, push out |
 | `z` | Undo the last change |
 | `Esc` | Close the open task |
+| `?` | Show shortcuts |
 
 ## Development
 
@@ -80,9 +93,10 @@ npm run test:e2e     # end-to-end tests (Playwright)
 npm run build        # production build in dist/
 ```
 
-Stack: Vite 8, React 19, TypeScript, Zustand (persisted to IndexedDB), Zod, Motion, vite-plugin-pwa.
-See [docs/PRD.md](docs/PRD.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
-[docs/RESEARCH.md](docs/RESEARCH.md).
+Stack: Vite 8, React 19, TypeScript, Zustand (persisted to IndexedDB), Zod, Motion, vite-plugin-pwa;
+optional Supabase (Auth + Postgres with RLS) for encrypted sync, with WebCrypto doing the encryption.
+See [docs/PRD.md](docs/PRD.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
+[docs/RESEARCH.md](docs/RESEARCH.md) and [docs/RELEASE.md](docs/RELEASE.md).
 
 Deploys to GitHub Pages from `main` once Pages is enabled (Settings → Pages → Source: GitHub Actions).
 

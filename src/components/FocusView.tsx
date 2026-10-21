@@ -171,7 +171,7 @@ function FocusCard({ task, now, onSkip }: FocusCardProps) {
           <Icon name="check" size={18} /> Done
         </button>
         <button type="button" className="btn" onClick={onSkip}>
-          Not now
+          Skip for now
         </button>
         <button
           type="button"
@@ -181,7 +181,7 @@ function FocusCard({ task, now, onSkip }: FocusCardProps) {
             startFocus(null)
           }}
         >
-          Push to later
+          Move to Later
         </button>
       </div>
     </motion.article>
@@ -323,7 +323,7 @@ function FocusTimer({ task, onCommit }: FocusTimerProps) {
           {finished ? 'Focus session finished. Nice work.' : ''}
         </span>
         <span className="focus__estimate num">
-          {EFFORT_LABEL[task.effort]} task, about {EFFORT_MINUTES[task.effort]} min
+          25-min sprint · {EFFORT_LABEL[task.effort].toLowerCase()} task, about {EFFORT_MINUTES[task.effort]} min in all
           {spent > 0 && ` · ${spent} min so far`}
         </span>
       </div>

@@ -19,6 +19,11 @@ comment on table public.vaults is 'End-to-end encrypted task data. One row per u
 alter table public.vaults enable row level security;
 alter table public.vaults force row level security;
 
+drop policy if exists "vaults: owner can read" on public.vaults;
+drop policy if exists "vaults: owner can create" on public.vaults;
+drop policy if exists "vaults: owner can update" on public.vaults;
+drop policy if exists "vaults: owner can delete" on public.vaults;
+
 create policy "vaults: owner can read"
   on public.vaults for select to authenticated
   using ((select auth.uid()) = user_id);
@@ -36,8 +41,9 @@ create policy "vaults: owner can delete"
   on public.vaults for delete to authenticated
   using ((select auth.uid()) = user_id);
 
--- No access at all for signed-out (anon) requests.
-revoke all on public.vaults from anon;
+-- No access at all for signed-out (anon) requests, and nothing beyond row CRUD for users
+-- (Supabase's default grants include TRUNCATE, which ignores RLS).
+revoke all on public.vaults from anon, authenticated;
 grant select, insert, update, delete on public.vaults to authenticated;
 
 -- Writes must move the version forward by exactly one (optimistic concurrency, no rollbacks),
@@ -64,6 +70,8 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.vaults_guard() from public, anon, authenticated;
 
 drop trigger if exists vaults_guard on public.vaults;
 create trigger vaults_guard

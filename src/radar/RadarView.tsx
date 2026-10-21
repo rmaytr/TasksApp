@@ -314,11 +314,11 @@ export function RadarView() {
     </div>
   )
 
-  if (!phone) return radar
+  // Same wrapper element either way: switching layouts must not remount the measured canvas.
   return (
-    <div className="radar-phone">
+    <div className={phone ? 'radar-phone' : 'radar-wrap'}>
       {radar}
-      <NearList />
+      {phone && <NearList />}
     </div>
   )
 }
