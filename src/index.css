@@ -1,82 +1,129 @@
-@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/lexend/wght.css';
 
-/* ---------- Tokens ---------- */
+/* =====================================================================
+   Cairn design system — palette "Dusk"
+   Lilac-grey canvas, white surfaces, one iris accent for actions,
+   marigold for "today / soon". Lexend for easy reading.
+   ===================================================================== */
 :root {
   color-scheme: light;
-  --bg: #e8ece6;
-  --surface: #f5f7f3;
-  --surface-2: #dde3db;
-  --ink: #17212b;
-  --ink-2: #4c5864;
-  --ink-3: #596470;
-  --rule: #c6cec5;
-  --field-border: #7a858f;
-  --ring-line: rgb(23 33 43 / 0.13);
-  --ring-fill: rgb(23 33 43 / 0.025);
-  --hub: #17212b;
-  --on-hub: #e8ece6;
-  --shadow: 0 1px 0 rgb(23 33 43 / 0.06), 0 12px 32px -12px rgb(23 33 43 / 0.28);
 
-  --area-indigo: #3e53d6;
-  --area-magenta: #c03683;
-  --area-teal: #0c8574;
-  --area-amber: #b87200;
-  --area-violet: #7e46d2;
-  --area-olive: #5a8411;
-  --area-sky: #1679b5;
-  --area-rose: #cf3e57;
+  /* Surfaces */
+  --canvas: #f3f1f8;
+  --surface: #ffffff;
+  --surface-2: #f8f7fb;
+  --sunken: #ebe8f2;
+  --line: #e4e0ec;
+  --line-strong: #cbc4d8;
 
-  /* Darker variants for area colors used as text (4.5:1 on --bg). */
-  --area-indigo-text: var(--area-indigo);
-  --area-magenta-text: #b3307a;
-  --area-teal-text: #0a7060;
-  --area-amber-text: #8f5800;
-  --area-violet-text: var(--area-violet);
-  --area-olive-text: #4a6e0e;
-  --area-sky-text: #126a9e;
-  --area-rose-text: #b32c44;
+  /* Text */
+  --ink: #1c1926;
+  --ink-2: #4f4a5e;
+  --ink-3: #676176;
 
-  --font: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --wide: 118%;
+  /* Actions */
+  --primary: #4b3fc4;
+  --primary-hover: #3f34ad;
+  --primary-press: #352b94;
+  --on-primary: #ffffff;
+  --primary-soft: #ecebfc;
+  --primary-soft-hover: #e0defa;
+  --primary-soft-ink: #3a2fa6;
+
+  /* Signals */
+  --sun: #f0a630;
+  --sun-soft: #fdf1dc;
+  --sun-ink: #7f4d00;
+  --danger: #c2334d;
+  --danger-soft: #fbe8ec;
+  --ok: #2d8a5e;
+  --ok-soft: #e2f3ea;
+
+  /* Areas: dot/fill color, and a darker variant for text (4.5:1 on surfaces) */
+  --area-indigo: #5867e8;
+  --area-magenta: #d24d93;
+  --area-teal: #19a39a;
+  --area-amber: #e59a1a;
+  --area-violet: #9358e0;
+  --area-olive: #5fa33a;
+  --area-sky: #2e95d6;
+  --area-rose: #e2566a;
+  --area-indigo-text: #3d4abd;
+  --area-magenta-text: #a5306d;
+  --area-teal-text: #0b6b65;
+  --area-amber-text: #855400;
+  --area-violet-text: #6634b0;
+  --area-olive-text: #3a6a1f;
+  --area-sky-text: #175f91;
+  --area-rose-text: #ad3247;
+
+  --shadow-sm: 0 1px 2px rgb(28 25 38 / 0.06);
+  --shadow: 0 1px 2px rgb(28 25 38 / 0.05), 0 10px 30px -14px rgb(43 31 92 / 0.22);
+  --shadow-lg: 0 2px 6px rgb(28 25 38 / 0.06), 0 24px 60px -20px rgb(43 31 92 / 0.35);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+
+  --font: 'Lexend Variable', 'Lexend', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --step--2: 0.75rem;
   --step--1: 0.8125rem;
   --step-0: 0.9375rem;
-  --step-1: 1.125rem;
-  --step-2: 1.4rem;
-  --step-3: 1.85rem;
-  --radius-s: 6px;
-  --radius-m: 12px;
+  --step-1: 1.0625rem;
+  --step-2: 1.3125rem;
+  --step-3: 1.75rem;
+  --step-4: 2.25rem;
+  --radius-xs: 8px;
+  --radius-s: 10px;
+  --radius-m: 14px;
   --radius-l: 20px;
+  --radius-xl: 28px;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --rail: 232px;
-  --drawer: 380px;
+  --rail: 248px;
+  --drawer: 400px;
   --topbar: 64px;
+
+  /* Aliases used by component styles */
+  --bg: var(--canvas);
+  --rule: var(--line);
+  --field-border: var(--line-strong);
+  --wide: normal;
+  --hub: var(--ink);
+  --on-hub: var(--surface);
+  --ring-line: color-mix(in srgb, var(--ink) 12%, transparent);
+  --ring-fill: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #121920;
-  --surface: #1a232c;
-  --surface-2: #232e38;
-  --ink: #e5ebe5;
-  --ink-2: #a9b4bd;
-  --ink-3: #8d98a2;
-  --rule: #2f3b46;
-  --field-border: #6b7782;
-  --ring-line: rgb(229 235 229 / 0.12);
-  --ring-fill: rgb(229 235 229 / 0.02);
-  --hub: #e5ebe5;
-  --on-hub: #121920;
-  --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
-
-  --area-indigo: #8592ff;
-  --area-magenta: #f06ab4;
-  --area-teal: #3cc7ae;
-  --area-amber: #f2b02e;
-  --area-violet: #b48cff;
-  --area-olive: #9bc94a;
-  --area-sky: #5bb8f0;
-  --area-rose: #ff7d90;
-
+  --canvas: #14121b;
+  --surface: #1d1a26;
+  --surface-2: #23202e;
+  --sunken: #100e16;
+  --line: #2e2a3b;
+  --line-strong: #463f5a;
+  --ink: #f2eff8;
+  --ink-2: #b9b2ca;
+  --ink-3: #958ea6;
+  --primary: #9c92ff;
+  --primary-hover: #b0a8ff;
+  --primary-press: #8a7ff5;
+  --on-primary: #16121f;
+  --primary-soft: #2a2550;
+  --primary-soft-hover: #352e63;
+  --primary-soft-ink: #d3cdff;
+  --sun: #f5b54a;
+  --sun-soft: #3a2e17;
+  --sun-ink: #f8cd84;
+  --danger: #ff7b8e;
+  --danger-soft: #3a1e25;
+  --ok: #5bd39a;
+  --ok-soft: #173326;
+  --area-indigo: #8792ff;
+  --area-magenta: #f07ab6;
+  --area-teal: #4fd1c5;
+  --area-amber: #f5b54a;
+  --area-violet: #b892ff;
+  --area-olive: #93d36b;
+  --area-sky: #6cc0f5;
+  --area-rose: #ff8597;
   --area-indigo-text: var(--area-indigo);
   --area-magenta-text: var(--area-magenta);
   --area-teal-text: var(--area-teal);
@@ -85,6 +132,9 @@
   --area-olive-text: var(--area-olive);
   --area-sky-text: var(--area-sky);
   --area-rose-text: var(--area-rose);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 36px -14px rgb(0 0 0 / 0.65);
+  --shadow-lg: 0 2px 8px rgb(0 0 0 / 0.4), 0 28px 70px -20px rgb(0 0 0 / 0.8);
 }
 
 /* ---------- Base ---------- */
@@ -102,11 +152,12 @@ body,
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--ink);
   font-family: var(--font);
   font-size: var(--step-0);
-  line-height: 1.45;
+  font-weight: 380;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -115,10 +166,9 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-stretch: var(--wide);
-  font-weight: 640;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
 p {
@@ -137,10 +187,23 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
+::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
 }
 
 .visually-hidden {
@@ -156,98 +219,157 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Shared controls ---------- */
+/* ---------- Buttons ----------
+   .btn            tonal (default secondary)
+   .btn--primary   filled iris — the one main action on a screen
+   .btn--ghost     quiet, for tertiary actions
+   .btn--danger    destructive (text color only, pair with ghost or tonal)
+   .btn--sm/.btn--lg sizes */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45em;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--surface);
-  font-weight: 540;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: var(--primary-soft);
+  color: var(--primary-soft-ink);
   font-size: var(--step--1);
+  font-weight: 560;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.08s ease;
 }
 
 .btn:hover {
-  border-color: var(--ink-3);
+  background: var(--primary-soft-hover);
 }
 
-.btn:active {
-  transform: scale(0.97);
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .btn--primary {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--bg);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 6px 16px -8px color-mix(in srgb, var(--primary) 70%, transparent);
 }
 
 .btn--primary:hover {
-  border-color: var(--ink);
-  opacity: 0.9;
+  background: var(--primary-hover);
+}
+
+.btn--primary:active:not(:disabled) {
+  background: var(--primary-press);
+}
+
+.btn--primary:focus-visible {
+  box-shadow: var(--focus-ring), 0 6px 16px -8px color-mix(in srgb, var(--primary) 70%, transparent);
 }
 
 .btn--ghost {
   background: transparent;
-  border-color: transparent;
+  color: var(--ink-2);
 }
 
 .btn--ghost:hover {
-  background: var(--surface-2);
-  border-color: transparent;
+  background: var(--sunken);
+  color: var(--ink);
 }
 
 .btn--danger {
-  color: var(--area-rose-text);
+  color: var(--danger);
+}
+
+.btn--danger:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn--sm {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-xs);
+}
+
+.btn--lg {
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius-m);
+  font-size: var(--step-0);
 }
 
 .btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
 }
 
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-s);
   background: transparent;
   color: var(--ink-2);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: var(--surface-2);
+  background: var(--sunken);
   color: var(--ink);
 }
 
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------- Inputs ---------- */
 .field {
   width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 1px solid var(--field-border);
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-s);
-  background: var(--surface);
+  background: var(--surface-2);
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.field:hover {
+  border-color: var(--line-strong);
 }
 
 .field:focus {
-  border-color: var(--ink-2);
-  box-shadow: 0 0 0 3px var(--ring-line);
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: var(--focus-ring);
 }
 
 textarea.field {
   resize: vertical;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
+select.field {
+  cursor: pointer;
+}
+
+/* ---------- Small parts ---------- */
 .dot {
   display: inline-block;
   flex: none;
@@ -262,71 +384,233 @@ textarea.field {
   flex: none;
   display: inline-grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   margin: 0;
-  border: 1.5px solid var(--c, var(--ink-3));
+  border: 2px solid color-mix(in srgb, var(--c, var(--ink-3)) 70%, var(--line-strong));
   border-radius: 50%;
-  background: transparent;
+  background: var(--surface);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.check:hover {
+  border-color: var(--c, var(--primary));
+  background: color-mix(in srgb, var(--c, var(--primary)) 10%, var(--surface));
+}
+
+.check:active {
+  transform: scale(0.92);
 }
 
 .check::after {
   content: '';
   width: 9px;
   height: 5px;
-  border-left: 2px solid var(--bg);
-  border-bottom: 2px solid var(--bg);
+  border-left: 2px solid var(--surface);
+  border-bottom: 2px solid var(--surface);
   transform: translateY(-1px) rotate(-45deg) scale(0);
   transition: transform 0.18s var(--ease-out);
 }
 
 .check:checked {
-  background: var(--c, var(--ink));
+  border-color: var(--c, var(--primary));
+  background: var(--c, var(--primary));
 }
 
 .check:checked::after {
   transform: translateY(-1px) rotate(-45deg) scale(1);
 }
 
+.check:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .check--square {
-  border-radius: 5px;
-  width: 18px;
-  height: 18px;
+  border-radius: 6px;
+  width: 20px;
+  height: 20px;
 }
 
 .kbd {
   display: inline-block;
-  min-width: 1.5em;
-  padding: 0 0.35em;
-  border: 1px solid var(--rule);
+  min-width: 1.6em;
+  padding: 0 0.4em;
+  border: 1px solid var(--line-strong);
   border-bottom-width: 2px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.5;
   text-align: center;
+  color: var(--ink-3);
+}
+
+/* Segmented control */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-s);
+  background: var(--sunken);
+}
+
+.seg button {
+  flex: 1 0 auto;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg button:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--line);
+}
+
+.seg button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Chips (pills) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+button.chip {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button.chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+button.chip[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-soft-ink);
+  font-weight: 600;
+}
+
+button.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sunken);
+  color: var(--ink-2);
+  font-size: var(--step--2);
+  font-weight: 500;
+}
+
+.tag--high {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.tag--soon {
+  background: var(--sun-soft);
+  color: var(--sun-ink);
+}
+
+/* Priority marker: three bars, filled by level */
+.prio {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.prio i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+
+.prio i:nth-child(1) {
+  height: 5px;
+}
+
+.prio i:nth-child(2) {
+  height: 8px;
+}
+
+.prio i:nth-child(3) {
+  height: 12px;
+}
+
+.prio[data-level='low'] i:nth-child(1),
+.prio[data-level='normal'] i:nth-child(-n + 2),
+.prio[data-level='high'] i {
+  background: currentColor;
+}
+
+.prio[data-level='high'] {
+  color: var(--danger);
+}
+
+.prio[data-level='normal'] {
   color: var(--ink-2);
 }
 
-/* Touch screens: every control gets a 44px target (PRD §5.5). */
+.prio[data-level='low'] {
+  color: var(--ink-3);
+}
+
+/* Card */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Touch screens: 44px targets (PRD §5.5). */
 @media (pointer: coarse) {
   .btn,
-  .icon-btn,
-  .toast__undo {
+  .icon-btn {
     min-height: 44px;
     min-width: 44px;
   }
 
   .seg button,
-  .row__steps,
-  .rail__area {
-    min-height: 44px;
-  }
-
-  .steps__del {
-    width: 44px;
-    height: 44px;
+  button.chip {
+    min-height: 40px;
   }
 }
 
@@ -337,8 +621,8 @@ textarea.field {
   z-index: 100;
   padding: 10px 16px;
   border-radius: var(--radius-s);
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--primary);
+  color: var(--on-primary);
   font-weight: 600;
 }
 

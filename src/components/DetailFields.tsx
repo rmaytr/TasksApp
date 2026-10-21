@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from 'react'
 import { addDays, fromISODate, parseDateToken, todayISO } from '../lib/dates'
 import { extractLinks } from '../lib/links'
 import { REPEAT_LABEL } from '../model/repeat'
 import { REPEATS, type Repeat, type Task } from '../model/types'
+import { wouldCreateCycle } from '../plan/order'
 import { useStore } from '../store/useStore'
 import { Icon } from './Icon'
 
@@ -40,7 +40,20 @@ export function DueField({ task, now }: FieldProps) {
         <label className="detail__chip detail__chip--pick">
           <Icon name="clock" size={14} />
           <span>{long ?? 'Pick a date'}</span>
-          <input type="date" value={task.due ?? ''} onChange={(e) => set(e.target.value || null)} aria-label="Pick a due date" />
+          <input
+            type="date"
+            value={task.due ?? ''}
+            onChange={(e) => set(e.target.value || null)}
+            // The input is invisible over the chip; open the calendar on any click, not just the icon.
+            onClick={(e) => {
+              try {
+                e.currentTarget.showPicker()
+              } catch {
+                // Older browsers: the native control still works.
+              }
+            }}
+            aria-label="Pick a due date"
+          />
         </label>
         {task.due && (
           <button type="button" className="detail__chip detail__chip--clear" onClick={() => set(null)} aria-label="Clear due date">
@@ -75,28 +88,53 @@ export function RepeatField({ task }: { task: Task }) {
   )
 }
 
-interface OptionalProps {
-  label: string
-  addLabel: string
-  hasValue: boolean
-  children: ReactNode
-}
+/** "Do after": tasks that should be finished first. The planner keeps this one behind them. */
+export function AfterField({ task }: { task: Task }) {
+  const tasks = useStore((s) => s.tasks)
+  const updateTask = useStore((s) => s.updateTask)
+  const after = (task.after ?? []).map((id) => tasks.find((t) => t.id === id)).filter((t): t is Task => t !== undefined)
+  const candidates = tasks.filter(
+    (t) => !t.done && t.id !== task.id && !(task.after ?? []).includes(t.id) && !wouldCreateCycle(tasks, task.id, t.id),
+  )
+  const set = (ids: string[]): void => updateTask(task.id, { after: ids.length ? ids : undefined })
 
-/** An optional field that stays a small "+ Add …" chip until it's needed. */
-export function OptionalField({ label, addLabel, hasValue, children }: OptionalProps) {
-  const [open, setOpen] = useState(hasValue)
-  if (!open && !hasValue) {
-    return (
-      <button type="button" className="detail__add-field" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={14} /> {addLabel}
-      </button>
-    )
-  }
   return (
-    <label className="detail__group">
-      <span className="detail__label">{label}</span>
-      {children}
-    </label>
+    <div className="detail__group">
+      <span className="detail__label">Do after</span>
+      {after.length > 0 && (
+        <ul className="detail__after">
+          {after.map((t) => (
+            <li key={t.id} className={t.done ? 'is-done' : undefined}>
+              <Icon name={t.done ? 'check' : 'clock'} size={14} />
+              <span>{t.title}</span>
+              <button
+                type="button"
+                className="icon-btn detail__after-remove"
+                onClick={() => set((task.after ?? []).filter((id) => id !== t.id))}
+                aria-label={`Remove "${t.title}" from do after`}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {candidates.length > 0 && (
+        <select
+          className="field detail__select detail__after-add"
+          value=""
+          onChange={(e) => e.target.value && set([...(task.after ?? []), e.target.value])}
+          aria-label="Do this after another task"
+        >
+          <option value="">{after.length ? 'Add another…' : 'Only after another task is done…'}</option>
+          {candidates.slice(0, 80).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.title.slice(0, 70)}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
   )
 }
 

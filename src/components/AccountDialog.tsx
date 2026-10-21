@@ -91,7 +91,7 @@ function SignIn() {
   return (
     <div className="dialog__body account">
       <Explainer>
-        Nearer works without an account. Signing in adds an <strong>end-to-end encrypted</strong> backup that syncs
+        Cairn works without an account. Signing in adds an <strong>end-to-end encrypted</strong> backup that syncs
         your tasks between your phone and laptop. Your tasks are encrypted on this device with a passphrase only you
         know. The server, and whoever runs it, sees only scrambled data.
       </Explainer>
@@ -259,7 +259,7 @@ function UnlockVault() {
       </Explainer>
       <label>
         <span>Passphrase</span>
-        <input className="field" type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus />
+        <input className="field" type="password" autoComplete="current-password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus data-autofocus />
       </label>
       <button type="submit" className="btn btn--primary" disabled={busy || pass.length === 0}>
         <Icon name="lock" size={16} /> {busy ? 'Unlocking…' : 'Unlock'}

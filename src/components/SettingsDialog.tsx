@@ -6,11 +6,12 @@ import { AREA_COLORS, type Area } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Dialog } from './Dialog'
 import { Icon } from './Icon'
+import { AssistantSettings, ReminderSettings } from './SettingsSections'
 import './SettingsDialog.css'
 
 const SHORTCUTS: readonly [string, string][] = [
   ['/', 'Add a task'],
-  ['1–5', 'Radar, Map, List, Focus, Reset'],
+  ['1–3', 'Today, All tasks, Focus'],
   ['Ctrl K', 'Find any task'],
   ['i', 'Import'],
   ['[ ]', 'On a radar dot: pull closer, push out'],
@@ -95,6 +96,10 @@ function SettingsBody() {
         )}
       </section>
 
+      <AssistantSettings />
+
+      <ReminderSettings />
+
       <section>
         <h3>Your data</h3>
         <p className="settings__note">
@@ -102,10 +107,10 @@ function SettingsBody() {
           {persisted === false && ' Your browser may clear it if storage runs low, so export a backup now and then.'}
         </p>
         <div className="settings__buttons">
-          <button type="button" className="btn" onClick={() => download(`nearer-backup-${dateStamp()}.json`, toJSON(areas, tasks, new Date()), 'application/json')}>
+          <button type="button" className="btn" onClick={() => download(`cairn-backup-${dateStamp()}.json`, toJSON(areas, tasks, new Date()), 'application/json')}>
             <Icon name="download" size={16} /> Back up (JSON)
           </button>
-          <button type="button" className="btn" onClick={() => download(`nearer-${dateStamp()}.md`, toMarkdown(areas, tasks, new Date()), 'text/markdown')}>
+          <button type="button" className="btn" onClick={() => download(`cairn-${dateStamp()}.md`, toMarkdown(areas, tasks, new Date()), 'text/markdown')}>
             <Icon name="download" size={16} /> Export Markdown
           </button>
           <button
@@ -169,7 +174,7 @@ function SettingsBody() {
       </section>
 
       <p className="settings__note">
-        Tip: install Nearer from your browser’s menu (“Install app” or “Add to Home Screen”) to open it like an app,
+        Tip: install Cairn from your browser’s menu (“Install app” or “Add to Home Screen”) to open it like an app,
         offline. Open source on{' '}
         <a href="https://github.com/rmaytr/TasksApp" target="_blank" rel="noreferrer">
           GitHub

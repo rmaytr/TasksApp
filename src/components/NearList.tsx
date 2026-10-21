@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { useNow } from '../hooks'
 import { compareUrgency, effectiveHorizon } from '../model/derive'
 import { useStore } from '../store/useStore'
-import { Row } from './ListView'
+import { TaskRow } from './TaskRow'
 import './NearList.css'
 
 /** Phone companion to the radar: the tasks in the two inner rings, as a tappable list. */
@@ -37,10 +37,10 @@ export function NearList() {
           .
         </p>
       ) : (
-        <ul className="list__rows">
+        <ul className="trows">
           <AnimatePresence initial={false}>
             {near.map((t) => (
-              <Row key={t.id} task={t} now={now} showRing />
+              <TaskRow key={t.id} task={t} now={now} showWhen showArea />
             ))}
           </AnimatePresence>
         </ul>

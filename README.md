@@ -1,42 +1,71 @@
-# Nearer
+# Cairn
 
-**Your to-dos on a radar.** Today sits in the middle, someday at the edge, and each part of your life
-gets its own slice. Drag things closer as they start to matter. Free, private, no sign-up.
+**One step at a time.** A calm to-do app built for brains that get overwhelmed by long lists.
+Type what's on your mind, press Enter, and Cairn files it, dates it and tells you what to do next.
+Free, private, no sign-up.
 
 **Try it: <https://rmaytr.github.io/TasksApp/>**
 
-![Nearer radar view](docs/screenshot.png)
+![Cairn's Today screen](docs/screenshot.png)
+
+_A cairn is the small stack of stones hikers leave to mark the trail: you only ever need to find the
+next one._
 
 ## Why another to-do app?
 
-Most lists turn into a guilt pile: everything in one long column, overdue items going red, and no
-sense of what actually matters this week. Nearer shows your whole load as **one picture organized by
-distance**:
+Most lists turn into a guilt pile: one long column, red overdue badges, and no sense of what matters
+right now. Cairn is designed around a few ADHD-friendly rules:
 
-- **Radar.** Rings are *Today · This week · This month · Later · Someday*. Wedges are your areas
-  (Classes, Orgs, Career, Projects, Learning, Life, or your own). Dot size is effort, a halo means high
-  priority, a hollow dot is waiting on something, and faded dots haven't been touched in two weeks.
-  Drag a dot to a different ring or wedge to move it.
-- **Map.** A mind map of everything: areas branch from the middle, tasks branch from areas,
-  steps from tasks. Add tasks or a new area right on the map. On phones it becomes an outline.
-- **List.** Everything grouped by area or by ring, with search, filters (waiting, high priority),
-  inline steps and quick add.
-- **Focus.** One task and its next step, with a 25-minute timer and an “I’ll do it…” prompt.
-  Naming when and where you'll do something
+- **One box to add things.** No form. Area, date and priority are read from your words
+  (“Finish lab report by Friday !”) and shown as a quiet preview you can correct but never have to.
+- **One thing at a time.** *Today* shows a single **Up next** card (Start · Done · Not now), a short
+  list for today and this week, and nothing else.
+- **Gentle reminders.** A *Coming up* strip shows what's due today or tomorrow, and optional
+  notifications arrive the evening before and the morning of a deadline.
+- **Order that makes sense.** Tasks can wait for other tasks (“do after”), and the planner orders
+  everything by deadline, priority, size and what's blocking what.
+- **Areas are pages.** Click *Classes* and you see only your classes, by when.
+
+### Views
+
+- **Today.** Capture, Up next, today and this week.
+- **All tasks.** List (search, priority filter, waiting, show done), **Map** (a mind map of areas
+  and tasks; an outline on phones) or **Radar** (rings from Today to Someday, slices per area; drag a
+  dot closer to do it sooner).
+- **Focus.** One task and its next step, a 25-minute timer and an “I'll do it…” prompt. Naming when
+  and where you'll do something
   [roughly doubles follow-through](https://cancercontrol.cancer.gov/brp/research/constructs/implementation-intentions).
-- **Reset.** A three-minute weekly sweep: pull closer, keep, push out, done or drop, one card at a time.
+- **Weekly reset.** A three-minute sweep: pull closer, keep, push out, done or drop, one card at a time.
 
-**Also:** repeating tasks (daily, weekly, monthly), one-tap due dates, links in notes become
-clickable chips, `Ctrl K` finds any task, and **New area** is one click away in every view.
+Also: High / Normal / Low priority, steps, repeating tasks, links in notes become chips, `Ctrl K`
+finds anything, light and dark themes, installable and works offline.
+
+## The assistant (optional)
+
+Turn it on in **Settings → Assistant** and describe a task in plain words:
+
+> Publish the domain for the BOR Realty site this weekend and add it to my portfolio and resume
+
+Claude turns that into one task with steps in the order they have to happen (connect the domain,
+check the site is live, add it to the portfolio, update the resume), picks the area, reads “this
+weekend” as Saturday and sets priority. If you already have related tasks, like “Update resume”, it
+marks them *do after* the new one so they wait their turn. A note listing unrelated things
+(“buy milk, call the dentist, finish the essay”) becomes separate tasks. **Plan my day** proposes an order for everything open and suggests links between
+tasks, which you accept or skip. Every change is one Undo away.
+
+It's off by default. Use **your own Anthropic API key** (stored only in your browser) or an **invite
+code** if the person who shared Cairn runs the proxy in [`worker/`](worker/README.md). Only the new
+task's text and the titles, areas, due dates and priorities of open tasks are sent; notes and steps
+never leave your device. Details in the [privacy policy](docs/PRIVACY.md).
 
 ## Getting your tasks in
 
-- **Type them.** The bar at the top understands `#area`, `!` (high priority), dates like `fri`,
-  `nov 3` or `in 2 weeks`, rings like `@week` or `@someday`, and sizes `~s ~m ~l`.
-  Example: `Email mentee #orgs tomorrow !`
+- **Type them.** The capture box understands `#area`, `!` (high priority), dates like `fri`,
+  `this weekend`, `nov 3` or `in 2 weeks`, rings like `@week` or `@someday`, and sizes `~s ~m ~l`.
+  Without `#area`, the area is guessed from the words. Example: `Email mentee #orgs tomorrow !`
 - **Import a file or paste a list.** Plain text, numbered lists, Markdown checklists, JSON or CSV
-  (Todoist exports work). `Title: step one, step two` becomes a task with steps, and areas are guessed
-  from the words. You review everything before it's added.
+  (Todoist exports work). `Title: step one, step two` becomes a task with steps. You review
+  everything before it's added.
 - **Back up.** Settings → *Back up (JSON)* or *Export Markdown*.
 
 ### JSON import format
@@ -63,14 +92,14 @@ Only `title` is required.
 
 ## Privacy
 
-By default everything is stored in your browser (IndexedDB) on your device: no account, no
-analytics, no cookies. Install it from your browser menu (“Install app” or “Add to Home Screen”)
-to use it like a native app, offline.
+By default everything is stored in your browser (IndexedDB): no account, no analytics, no cookies.
+Install it from your browser menu (“Install app” or “Add to Home Screen”) to use it like a native app,
+offline.
 
 **Optional sync** (if the deployment has it turned on): sign in with a one-time email code and
-choose an encryption passphrase. Your tasks are encrypted on your device before upload, so the
-server, and whoever runs it, only ever stores ciphertext. Details: [docs/SYNC.md](docs/SYNC.md),
-[privacy policy](docs/PRIVACY.md), [SECURITY.md](SECURITY.md). Operators: [docs/DEPLOY.md](docs/DEPLOY.md).
+choose an encryption passphrase. Tasks are encrypted on your device before upload, so the server only
+ever stores ciphertext. Details: [docs/SYNC.md](docs/SYNC.md), [privacy policy](docs/PRIVACY.md),
+[SECURITY.md](SECURITY.md). Operators: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Keyboard
 
@@ -78,12 +107,11 @@ server, and whoever runs it, only ever stores ciphertext. Details: [docs/SYNC.md
 | --- | --- |
 | `/` or `n` | Add a task |
 | `Ctrl K` | Find any task |
-| `1`–`5` | Radar, Map, List, Focus, Reset |
+| `1` `2` `3` | Today, All tasks, Focus |
 | `i` | Import |
-| `[` `]` | On a radar dot: pull closer, push out |
 | `z` | Undo the last change |
-| `Esc` | Close the open task |
-| `?` | Show shortcuts |
+| `Esc` | Close the open task or dialog |
+| `?` | Settings and shortcuts |
 
 ## Development
 
@@ -96,9 +124,11 @@ npm run build        # production build in dist/
 ```
 
 Stack: Vite 8, React 19, TypeScript, Zustand (persisted to IndexedDB), Zod, Motion, vite-plugin-pwa;
-optional Supabase (Auth + Postgres with RLS) for encrypted sync, with WebCrypto doing the encryption.
-See [docs/PRD.md](docs/PRD.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
-[docs/RESEARCH.md](docs/RESEARCH.md) and [docs/RELEASE.md](docs/RELEASE.md).
+optional Supabase (Auth + Postgres with RLS) for encrypted sync; optional Claude API
+(`@anthropic-ai/sdk`) for the assistant, directly or through a Cloudflare Worker.
+See [docs/REVAMP.md](docs/REVAMP.md) (current design and plan), [docs/PRD.md](docs/PRD.md),
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/RESEARCH.md](docs/RESEARCH.md) and
+[docs/RELEASE.md](docs/RELEASE.md).
 
 Every push to `main` deploys to GitHub Pages: <https://rmaytr.github.io/TasksApp/>.
 

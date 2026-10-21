@@ -40,7 +40,7 @@ reviewed, especially if you add analytics, payments or users under 13.
 
 **Must**
 - [ ] Set up Supabase + custom SMTP, then test sign-in → passphrase → second device (see [DEPLOY.md](DEPLOY.md))
-- [ ] Custom domain (e.g. `nearer.app` or `getnearer.com`) on Cloudflare Pages: own origin, real
+- [ ] Custom domain (e.g. `cairntasks.app` or `getcairn.app`) on Cloudflare Pages: own origin, real
       security headers (`frame-ancestors`, HSTS), and Supabase redirect URLs updated
 - [ ] Try it on a real iPhone (Safari → Add to Home Screen) and a real Android phone
 - [ ] Ask 3 friends to import their own lists and watch them use it without help
@@ -54,7 +54,7 @@ reviewed, especially if you add analytics, payments or users under 13.
 - [ ] Lighthouse pass (performance ≥ 90, accessibility ≥ 95) on the deployed URL
 
 **Later / monetization ideas**
-- Free forever locally; "Nearer Plus" ($2–3/month) for sync on more than 2 devices, themes,
+- Free forever locally; "Cairn Plus" ($2–3/month) for sync on more than 2 devices, themes,
   shared areas. Payments via Stripe Checkout. Needs terms, refund policy and tax handling
   (Stripe Tax or a merchant of record such as Lemon Squeezy).
 - Keep end-to-end encryption as the core promise; it's a real differentiator against Notion and Todoist.

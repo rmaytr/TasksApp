@@ -108,6 +108,42 @@ const mondayIndex = (d: Date): number => (d.getDay() + 6) % 7
 
 const nextMonday = (now: Date): string => addDays(todayISO(now), 7 - mondayIndex(now))
 
+/** Days from today until the coming Saturday; on a Sunday the weekend is already here (0). */
+const daysToWeekend = (now: Date): number => (now.getDay() === 0 ? 0 : 6 - now.getDay())
+
+/**
+ * "this weekend" / "weekend" / "on the weekend": the coming Saturday (today on Sat or Sun).
+ * "next weekend": the Saturday after that one (from Sat/Sun: the following Saturday).
+ * A possessive ("weekend's chores") or longer word ("weekender") is not a date.
+ */
+const findWeekend: Finder = (text, now) =>
+  scan(
+    text,
+    new RegExp(`${WORD_START}(?:(next)\\s+|(?:on\\s+)?the\\s+|this\\s+)?weekend(?![\\w'’])`, 'gi'),
+    (m) => {
+      const thisWeekend = daysToWeekend(now)
+      // From Sunday the "coming" Saturday is yesterday, so the next one is 6 days out.
+      const days = m[1] ? (now.getDay() === 0 ? 6 : thisWeekend + 7) : thisWeekend
+      return addDays(todayISO(now), days)
+    },
+  )
+
+/** "end of week" / "eow": this Friday (today on Friday; from Sat/Sun, next Friday). */
+const findEndOfWeek: Finder = (text, now) =>
+  scan(
+    text,
+    new RegExp(`${WORD_START}(?:by\\s+(?:the\\s+)?)?(?:end\\s+of\\s+(?:the\\s+)?week|eow)(?!\\w)`, 'gi'),
+    () => addDays(todayISO(now), (5 - now.getDay() + 7) % 7),
+  )
+
+/** "end of day" / "eod": today. */
+const findEndOfDay: Finder = (text, now) =>
+  scan(
+    text,
+    new RegExp(`${WORD_START}(?:by\\s+(?:the\\s+)?)?(?:end\\s+of\\s+(?:the\\s+)?day|eod)(?!\\w)`, 'gi'),
+    () => todayISO(now),
+  )
+
 const findNextWeek: Finder = (text, now) =>
   scan(text, new RegExp(`${WORD_START}next\\s+week(?!\\w)`, 'gi'), () => nextMonday(now))
 
@@ -162,6 +198,9 @@ const findISO: Finder = (text) =>
 const FINDERS: readonly Finder[] = [
   findRelativeWords,
   findNextWeek,
+  findWeekend,
+  findEndOfWeek,
+  findEndOfDay,
   findWeekdays,
   findInDuration,
   findEndOfMonth,

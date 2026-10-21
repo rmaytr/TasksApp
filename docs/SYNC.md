@@ -1,6 +1,6 @@
 # Accounts & end-to-end encrypted sync
 
-Nearer stays local-first: it works fully without an account. An account only adds
+Cairn stays local-first: it works fully without an account. An account only adds
 **backup and sync across your devices**. Sync is end-to-end encrypted, so the server
 (and whoever runs it) stores ciphertext it cannot read.
 
@@ -26,7 +26,7 @@ approximate size of your encrypted data.
 ```
 
 1. **Sign in** with a one-time code sent to your email (Supabase Auth, passwordless). No
-   password is ever created or stored by Nearer.
+   password is ever created or stored by Cairn.
 2. **First device:** choose an encryption passphrase. A random salt is generated, the key is
    derived in the browser (WebCrypto), and your data is encrypted and uploaded.
 3. **Other devices:** sign in, type the same passphrase, and your data is decrypted and merged

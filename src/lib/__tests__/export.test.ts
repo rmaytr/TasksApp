@@ -103,7 +103,7 @@ describe('toMarkdown', () => {
   const md = toMarkdown(DEFAULT_AREAS, tasks, NOW)
 
   it('starts with a dated title and has one ## heading per area, in order', () => {
-    expect(md.split('\n')[0]).toBe('# Nearer export — 2026-10-21')
+    expect(md.split('\n')[0]).toBe('# Cairn export — 2026-10-21')
     const headings = md.split('\n').filter((l) => l.startsWith('## '))
     expect(headings).toEqual(DEFAULT_AREAS.map((a) => `## ${a.name}`))
   })
@@ -131,7 +131,7 @@ describe('toMarkdown', () => {
   })
 
   it('handles no tasks', () => {
-    expect(toMarkdown([], [], NOW)).toBe('# Nearer export — 2026-10-21\n')
+    expect(toMarkdown([], [], NOW)).toBe('# Cairn export — 2026-10-21\n')
   })
 })
 

@@ -2,7 +2,7 @@ import type { Area, ExportFile, Step, Task } from '../model/types'
 import { toISODate } from './dates'
 
 const FALLBACK_SECTION = 'Other'
-const TITLE_PREFIX = '# Nearer export — '
+const TITLE_PREFIX = '# Cairn export — '
 
 /** Snapshot of everything, copied so later edits to the store cannot leak into it. */
 export function toExportFile(areas: Area[], tasks: Task[], now: Date): ExportFile {

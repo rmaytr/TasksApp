@@ -18,6 +18,7 @@ import { currentSession, deleteAccount, getClient, signOut } from './client'
 import { cloudEnabled } from './config'
 import { forgetVaultKey, loadLastUser, loadVaultKey, saveLastUser, saveVaultKey, type StoredVaultKey } from './keyStore'
 import { SupabaseBackend } from './supabaseBackend'
+import { forgetAssistantSecrets } from '../assist/assistant'
 
 const PUSH_DELAY_MS = 2000
 const POLL_MS = 60_000
@@ -275,7 +276,10 @@ export async function signOutCloud(options: { wipeDevice: boolean }): Promise<vo
   await inFlight
   if (c) await forgetVaultKey(c.userId)
   await signOut()
-  if (options.wipeDevice) useStore.getState().wipeLocal()
+  if (options.wipeDevice) {
+    useStore.getState().wipeLocal()
+    await forgetAssistantSecrets()
+  }
 }
 
 export async function deleteCloudAccount(): Promise<void> {

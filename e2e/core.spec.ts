@@ -1,61 +1,105 @@
 import { expect, test } from '@playwright/test'
 import {
-  WELCOME_TITLE,
+  areaTotal,
+  captureInput,
   captureTask,
   expectPersisted,
-  hub,
-  hubCount,
   importText,
   loadSample,
   openApp,
-  radar,
-  radarNodes,
-  railTotal,
+  sideButton,
+  sidebar,
   startEmpty,
+  taskButton,
   toast,
+  welcome,
 } from './helpers'
 
-test.describe('welcome and sample data', () => {
-  test('first visit shows welcome and sample tasks populate the radar and rail', async ({ page }) => {
+test.describe('welcome', () => {
+  test('first visit shows one modal welcome that closes once you pick a start', async ({ page }) => {
     await openApp(page)
-    await expect(page.getByRole('heading', { name: WELCOME_TITLE })).toBeVisible()
+    await expect(welcome(page)).toBeVisible()
+    await expect(welcome(page).getByRole('button', { name: 'Import my list' })).toBeFocused()
 
-    await page.getByRole('button', { name: 'Try it with sample tasks' }).click()
+    await welcome(page).getByRole('button', { name: 'Try with sample tasks' }).click()
 
-    await expect(page.getByRole('heading', { name: WELCOME_TITLE })).toBeHidden()
-    await expect(radar(page)).toBeVisible()
-    await expect(radarNodes(page).first()).toBeVisible()
-    expect(await radarNodes(page).count()).toBeGreaterThan(5)
-    await expect.poll(() => railTotal(page)).toBeGreaterThan(0)
-    await expect(page.locator('.rail__count').first()).not.toHaveText('0')
+    await expect(welcome(page)).toBeHidden()
+    await expect(page.getByRole('heading', { name: 'Up next' })).toBeVisible()
+    await expect.poll(() => areaTotal(page)).toBeGreaterThan(5)
+    await expectPersisted(page, '"onboarded":true')
+
+    await page.reload()
+    await expect(captureInput(page)).toBeVisible()
+    await expect(welcome(page)).toBeHidden()
+  })
+
+  test('the brand goes home from anywhere', async ({ page }) => {
+    await loadSample(page)
+    await sideButton(page, 'All tasks').click()
+    await expect(page).toHaveURL(/#tasks$/)
+    await sideButton(page, 'Cairn, go to Today').click()
+    await expect(page).toHaveURL(/#home$/)
+    await expect(captureInput(page)).toBeVisible()
   })
 })
 
-test.describe('quick capture', () => {
-  test('"/" focuses capture, chips preview tokens, Enter adds, List shows the row', async ({ page }) => {
+test.describe('capture', () => {
+  test('"/" focuses capture, the preview reads the words, Enter adds', async ({ page }) => {
     await startEmpty(page)
-    await page.locator('body').click({ position: { x: 5, y: 5 } })
+    await page.locator('body').click({ position: { x: 600, y: 5 } })
     await page.keyboard.press('/')
-    const input = page.getByLabel('New task')
+    const input = captureInput(page)
     await expect(input).toBeFocused()
 
     await input.pressSequentially('Email mentee #orgs tomorrow !')
-    await expect(page.getByLabel('Area for this task')).toHaveValue('orgs')
-    const chips = page.locator('.capture__chips')
-    await expect(chips.locator('.chip--due')).toHaveText('Tomorrow')
-    await expect(chips.locator('.chip--high')).toHaveText('High priority')
+    const form = page.getByRole('form', { name: 'Add a task' }).first()
+    await expect(form.locator('.capture__area select')).toHaveValue('orgs')
+    await expect(form.locator('.tag--soon')).toHaveText('Tomorrow')
+    await expect(form.locator('.tag--high')).toHaveText('High priority')
 
     await input.press('Enter')
     await expect(input).toHaveValue('')
     await expect(toast(page)).toContainText('Added to Orgs')
 
-    await input.press('Escape')
-    await page.keyboard.press('3')
-    const orgs = page.locator('section.list__group').filter({ has: page.getByRole('heading', { name: /^Orgs/ }) })
-    const row = orgs.locator('li.row').filter({ hasText: 'Email mentee' })
+    await sideButton(page, /^Orgs/).click()
+    const row = page.locator('.trow').filter({ has: taskButton(page, 'Email mentee') })
     await expect(row).toBeVisible()
-    await expect(row.locator('.tag--high')).toHaveText('High')
-    await expect(row.getByText('Tomorrow')).toBeVisible()
+    await expect(row.locator('.tag')).toHaveText('Tomorrow')
+    await expect(row.locator('.prio')).toHaveAttribute('data-level', 'high')
+  })
+
+  test('the area is guessed from the words alone', async ({ page }) => {
+    await startEmpty(page)
+    await captureInput(page).fill('Finish the calculus homework')
+    await expect(page.locator('.capture__area select').first()).toHaveValue('classes')
+  })
+
+  test('New task opens a dialog that stays open for a brain dump', async ({ page }) => {
+    await startEmpty(page)
+    await sideButton(page, 'New task').click()
+    const dialog = page.getByRole('dialog', { name: 'New task' })
+    const input = dialog.getByLabel('New task')
+    await expect(input).toBeFocused()
+    for (const title of ['Buy stamps', 'Call the bank']) {
+      await input.fill(title)
+      await input.press('Enter')
+    }
+    await expect(dialog.getByRole('list', { name: 'Added just now' }).getByRole('listitem')).toHaveCount(2)
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect.poll(() => areaTotal(page)).toBe(2)
+  })
+})
+
+test.describe('areas', () => {
+  test('clicking an area opens its page with only its tasks', async ({ page }) => {
+    await loadSample(page)
+    await sideButton(page, /^Classes/).click()
+    await expect(page).toHaveURL(/#area\/classes$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Classes' })).toBeVisible()
+    await expect(taskButton(page, 'Study for the biology midterm')).toBeVisible()
+    await expect(taskButton(page, 'Call home')).toHaveCount(0)
+    await expect(sideButton(page, /^Classes/)).toHaveAttribute('aria-current', 'page')
   })
 })
 
@@ -83,12 +127,10 @@ test.describe('import', () => {
     await dialog.getByRole('button', { name: 'Add 4 tasks' }).click()
     await expect(dialog).toHaveCount(0)
     await expect(toast(page)).toContainText('Added 4 tasks')
-    await expect.poll(() => railTotal(page)).toBe(4)
-    await expect(radarNodes(page)).toHaveCount(4)
+    await expect.poll(() => areaTotal(page)).toBe(4)
 
     await toast(page).getByRole('button', { name: 'Undo' }).click()
-    await expect.poll(() => railTotal(page)).toBe(0)
-    await expect(radarNodes(page)).toHaveCount(0)
+    await expect.poll(() => areaTotal(page)).toBe(0)
   })
 })
 
@@ -99,75 +141,96 @@ test.describe('persistence', () => {
     await expectPersisted(page, 'Remember the milk')
 
     await page.reload()
-    await expect(page.getByLabel('New task')).toBeVisible()
-    await expect(page.getByRole('heading', { name: WELCOME_TITLE })).toBeHidden()
-    await expect(radar(page).getByRole('button', { name: /^Remember the milk/ })).toBeVisible()
-    await expect.poll(() => railTotal(page)).toBe(1)
+    await expect(captureInput(page)).toBeVisible()
+    await expect(welcome(page)).toBeHidden()
+    await page.keyboard.press('2')
+    await expect(taskButton(page, 'Remember the milk')).toBeVisible()
+    await expect.poll(() => areaTotal(page)).toBe(1)
   })
 })
 
 test.describe('list', () => {
   test('checking a task hides it, Undo restores it', async ({ page }) => {
     await loadSample(page)
-    await page.keyboard.press('3')
+    await page.keyboard.press('2')
     const checkboxes = page.getByRole('checkbox', { name: /^Done: / })
     await expect(checkboxes.first()).toBeVisible()
     const before = await checkboxes.count()
 
     const first = checkboxes.first()
     const label = (await first.getAttribute('aria-label')) ?? ''
-    const title = label.replace(/^Done: /, '')
     await first.click()
 
     await expect(page.getByRole('checkbox', { name: label, exact: true })).toHaveCount(0)
     await expect(checkboxes).toHaveCount(before - 1)
-    await expect(toast(page)).toBeVisible()
 
     await toast(page).getByRole('button', { name: 'Undo' }).click()
     await expect(checkboxes).toHaveCount(before)
-    await expect(page.getByRole('button', { name: title, exact: true })).toBeVisible()
+  })
+
+  test('the priority filter shows only that priority', async ({ page }) => {
+    await loadSample(page)
+    await page.keyboard.press('2')
+    const filters = page.getByRole('group', { name: 'Priority' })
+    await filters.getByRole('button', { name: 'High' }).click()
+    const rows = page.locator('.trow')
+    await expect(rows.first()).toBeVisible()
+    // Rows that fade out are still in the DOM for a moment, so let the count settle.
+    await expect(rows.filter({ hasNot: page.locator('.prio[data-level="high"]') })).toHaveCount(0)
   })
 })
 
 test.describe('task detail', () => {
-  test('open a node, add a step, move to Today, hub count increases', async ({ page }) => {
+  test('add a step, move to Today, raise priority; Today shows it', async ({ page }) => {
     await startEmpty(page)
     await captureTask(page, 'Plan the trip @later')
-    await page.getByLabel('New task').press('Escape')
+    await sideButton(page, 'All tasks').click()
+    await taskButton(page, 'Plan the trip').click()
 
-    const before = await hubCount(page)
-    expect(before).toBe(0)
-
-    await radarNodes(page).first().click()
     const detail = page.getByRole('complementary', { name: 'Task details' })
     await expect(detail).toBeVisible()
-
     const step = detail.getByLabel('New step')
-    await expect(step).toHaveAttribute('placeholder', 'Break it into smaller steps')
     await step.fill('Book flights')
     await step.press('Enter')
     await expect(detail.getByLabel('Step', { exact: true })).toHaveValue('Book flights')
 
-    const ring = detail.getByRole('group', { name: 'Ring' }).getByRole('button', { name: 'Today', exact: true })
-    await ring.click()
-    await expect(ring).toHaveAttribute('aria-pressed', 'true')
-    await expect.poll(() => hubCount(page)).toBe(before + 1)
-    await expect(hub(page)).toHaveAttribute('aria-label', /^1 for today/)
+    const today = detail.getByRole('group', { name: 'Ring' }).getByRole('button', { name: 'Today', exact: true })
+    await today.click()
+    await expect(today).toHaveAttribute('aria-pressed', 'true')
+    const high = detail.getByRole('group', { name: 'Priority' }).getByRole('button', { name: /High/ })
+    await high.click()
+    await expect(high).toHaveAttribute('aria-pressed', 'true')
+
+    await detail.getByRole('button', { name: 'Close details' }).click()
+    await page.keyboard.press('1')
+    await expect(page.getByRole('heading', { name: 'Up next' })).toBeVisible()
+    await expect(page.locator('.home').getByText('Plan the trip')).toBeVisible()
+  })
+})
+
+test.describe('reminders', () => {
+  test('a task due today shows in the Coming up strip', async ({ page }) => {
+    await startEmpty(page)
+    await captureTask(page, 'Pay the electric bill today')
+    const strip = page.getByRole('region', { name: 'Coming up' })
+    await expect(strip).toBeVisible()
+    await expect(strip.getByRole('button', { name: /Pay the electric bill/ })).toBeVisible()
   })
 })
 
 test.describe('focus', () => {
   test('Done advances to the next task', async ({ page }) => {
     await loadSample(page)
-    await page.keyboard.press('4')
+    await page.keyboard.press('3')
     const title = page.locator('#focus-title')
     await expect(title).toBeVisible()
     const first = (await title.textContent()) ?? ''
     expect(first).not.toBe('')
 
-    await page.getByRole('button', { name: 'Done' }).click()
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
 
     await expect(title).toBeVisible()
     await expect(title).not.toHaveText(first)
+    await expect(sidebar(page).getByRole('button', { name: 'Focus' })).toHaveAttribute('aria-current', 'page')
   })
 })

@@ -1,0 +1,139 @@
+.capture {
+  display: grid;
+  gap: 10px;
+}
+
+.capture__box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+  cursor: text;
+}
+
+.capture__box:hover {
+  border-color: var(--line-strong);
+}
+
+.capture__box:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring), var(--shadow);
+}
+
+.capture--hero .capture__box {
+  min-height: 64px;
+  padding-left: 20px;
+  border-radius: var(--radius-xl);
+}
+
+.capture__icon {
+  display: grid;
+  color: var(--primary);
+}
+
+.capture__input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: var(--step-0);
+  font-weight: 420;
+}
+
+.capture--hero .capture__input {
+  height: 52px;
+  font-size: var(--step-1);
+}
+
+.capture__submit {
+  min-width: 76px;
+}
+
+.capture--hero .capture__submit {
+  min-height: 48px;
+  border-radius: 20px;
+  padding: 0 22px;
+}
+
+.capture__preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+.capture__hint {
+  color: var(--ink-3);
+}
+
+.capture__area {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 13%, var(--surface));
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.capture__area:hover {
+  background: color-mix(in srgb, var(--c) 20%, var(--surface));
+}
+
+.capture__area:focus-within {
+  box-shadow: 0 0 0 2px var(--c);
+}
+
+.capture__area .dot {
+  background: var(--c);
+  width: 8px;
+  height: 8px;
+}
+
+.capture__area select {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-size: var(--step--1);
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.capture__ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary-soft-ink);
+}
+
+@media (max-width: 760px) {
+  .capture--hero .capture__box {
+    min-height: 56px;
+    padding-left: 14px;
+  }
+
+  .capture--hero .capture__input {
+    font-size: var(--step-0);
+  }
+
+  .capture__submit,
+  .capture--hero .capture__submit {
+    min-width: 44px;
+    padding: 0 12px;
+  }
+}

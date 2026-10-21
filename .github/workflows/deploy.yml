@@ -37,6 +37,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
+          VITE_AI_PROXY_URL: ${{ vars.VITE_AI_PROXY_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

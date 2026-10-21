@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Privacy · Nearer</title>
+    <title>Privacy · Cairn</title>
     <meta name="color-scheme" content="light dark" />
     <style>
       :root { --bg: #e8ece6; --ink: #17212b; --ink2: #4c5864; --rule: #c6cec5; --surface: #f5f7f3; }
@@ -24,10 +24,10 @@
   </head>
   <body>
     <main>
-      <p><a href="./">← Back to Nearer</a></p>
+      <p><a href="./">← Back to Cairn</a></p>
       <h1>Privacy</h1>
       <p class="date">Effective October 21, 2026</p>
-      <p>Nearer is a small, free to-do app made by Rodion and shared with friends. It shows no ads and sells nothing.</p>
+      <p>Cairn is a small, free to-do app made by Rodion and shared with friends. It shows no ads and sells nothing.</p>
 
       <h2>The short version</h2>
       <ul>
@@ -36,6 +36,7 @@
         <li><strong>We keep the minimum:</strong> your email (for sign-in codes) and the encrypted backup.</li>
         <li><strong>No analytics, no trackers, no advertising cookies, no selling or sharing of data.</strong></li>
         <li><strong>You can delete everything</strong> at any time from the app.</li>
+        <li><strong>The assistant is off unless you turn it on.</strong> When it's on, the text of a new task plus the titles, areas, due dates and priorities of your open tasks go to Anthropic's Claude API to be sorted. Notes and steps are never sent.</li>
       </ul>
 
       <h2>What we collect</h2>
@@ -46,6 +47,7 @@
             <tr><td>Tasks, areas, steps, notes</td><td>Always, on your device only</td><td>So the app works</td><td>You, and anyone using your unlocked device</td></tr>
             <tr><td>Email address</td><td>Only if you sign in</td><td>To send sign-in codes and identify your account</td><td>The app operator and Supabase (hosting)</td></tr>
             <tr><td>Encrypted backup (ciphertext, random salt, version, timestamps)</td><td>Only if you turn on sync</td><td>To sync between your devices</td><td>Nobody without your passphrase</td></tr>
+            <tr><td>Task text you type, plus titles, areas, due dates and priorities of open tasks (up to 150)</td><td>Only while the assistant is on</td><td>To suggest an area, dates, priority, steps and an order</td><td>Anthropic (<a href="https://www.anthropic.com/legal/privacy">privacy</a>); with an invite code it passes through the operator's proxy, whose code doesn't store or log it</td></tr>
             <tr><td>Sign-in metadata (time, IP in server logs)</td><td>Only if you sign in</td><td>Security and abuse prevention</td><td>The app operator and Supabase, per their log retention</td></tr>
           </tbody>
         </table>
@@ -60,6 +62,9 @@
       </ul>
       <p>If you forget your passphrase, <strong>we cannot recover your backup</strong>. Your tasks remain on any device that still has them, and you can create a new backup from there.</p>
 
+      <h2>The optional assistant</h2>
+      <p>Settings → Assistant: <strong>Off</strong> (default, nothing is sent), <strong>My own API key</strong> (stored only in this browser and sent only to api.anthropic.com, billed to you), or <strong>Invite code</strong> if offered (requests go through the operator's Cloudflare Worker, which checks the code, rate-limits it, and is written never to store or log task text). Notes, steps, plans, finished tasks and your sync passphrase are never sent.</p>
+
       <h2>Where data is stored</h2>
       <p>The encrypted backup and your email are stored with <a href="https://supabase.com/privacy">Supabase</a>. The app itself is served by GitHub Pages, which may log visitors' IP addresses like any web host.</p>
 
@@ -71,10 +76,10 @@
       </ul>
 
       <h2>Your choices</h2>
-      <p>Use Nearer without an account; export your data any time (Settings → Back up); delete your account yourself; or ask questions by opening an issue at <a href="https://github.com/rmaytr/TasksApp/issues">github.com/rmaytr/TasksApp</a> or contacting Rodion directly.</p>
+      <p>Use Cairn without an account; export your data any time (Settings → Back up); delete your account yourself; or ask questions by opening an issue at <a href="https://github.com/rmaytr/TasksApp/issues">github.com/rmaytr/TasksApp</a> or contacting Rodion directly.</p>
 
       <h2>Children</h2>
-      <p>Nearer is not directed at children under 13, and we don't knowingly collect their information.</p>
+      <p>Cairn is not directed at children under 13, and we don't knowingly collect their information.</p>
 
       <h2>Changes</h2>
       <p>If this policy changes, the date at the top changes. Because your tasks are encrypted with your passphrase, no future change can give us access to past backups.</p>

@@ -5,7 +5,7 @@ let clientPromise: Promise<SupabaseClient> | null = null
 
 /** Lazily loads supabase-js so people who never sign in never download it. */
 export function getClient(): Promise<SupabaseClient> {
-  if (!cloudEnabled) return Promise.reject(new Error('Sync is not set up for this copy of Nearer.'))
+  if (!cloudEnabled) return Promise.reject(new Error('Sync is not set up for this copy of Cairn.'))
   clientPromise ??= import('@supabase/supabase-js')
     .then(({ createClient }) =>
       createClient(cloudConfig.url, cloudConfig.anonKey, {
@@ -72,7 +72,7 @@ export async function deleteAccount(): Promise<void> {
 export function friendlyAuthError(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('signups not allowed') || m.includes('signup is disabled'))
-    return 'Nearer is invite-only for now. Ask whoever shared it with you to send an invite to this email.'
+    return 'Cairn is invite-only for now. Ask whoever shared it with you to send an invite to this email.'
   if (m.includes('rate limit') || m.includes('too many'))
     return 'Too many attempts. Wait a minute and try again.'
   if (m.includes('expired') || m.includes('invalid'))

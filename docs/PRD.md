@@ -1,4 +1,4 @@
-# Nearer — Product Requirements
+# Cairn — Product Requirements
 
 > Everything you're carrying, at a glance. Pull what matters closer.
 
@@ -80,7 +80,7 @@ Three research-backed mechanics sit underneath the picture:
 - **Import** from file (drag-and-drop or picker) or pasted text:
   - Plain text / numbered lists (`Title: step, step` becomes a task with steps; indented lines become steps)
   - Markdown checklists (`- [ ]`, nested items as steps, `## Heading` sets area)
-  - JSON (Nearer export, or a simple array of `{title, area, steps}`)
+  - JSON (Cairn export, or a simple array of `{title, area, steps}`)
   - CSV (Todoist-style `TYPE,CONTENT,...` or any CSV with a `title`/`content` column)
 - Every import goes through a **preview** where the user can fix the area per
   task before anything is saved.

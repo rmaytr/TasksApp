@@ -23,6 +23,7 @@ export function draftToTask(draft: TaskDraft, areaId: string, now: Date, fallbac
     horizon: draft.horizon ?? horizonForDue(due, now) ?? fallbackHorizon,
     due,
     high: Boolean(draft.high),
+    ...(draft.low && !draft.high && { low: true }),
     effort: draft.effort ?? 'm',
     waiting: draft.waiting?.trim() || null,
     plan: draft.plan?.trim() || null,

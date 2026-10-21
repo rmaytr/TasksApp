@@ -148,3 +148,42 @@
   font-size: var(--step--1);
   cursor: pointer;
 }
+
+.settings h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings h3 svg {
+  color: var(--primary);
+}
+
+.settings__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.settings__inline {
+  display: grid;
+  gap: 4px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.settings__inline .field {
+  width: auto;
+  min-height: 36px;
+  padding: 4px 10px;
+}
+
+.settings__secret {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings__secret .field {
+  flex: 1 1 220px;
+}

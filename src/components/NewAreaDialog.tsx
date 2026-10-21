@@ -63,6 +63,7 @@ function NewAreaForm({ onDone }: { onDone: () => void }) {
             placeholder="e.g. Research"
             maxLength={40}
             autoFocus
+            data-autofocus
             aria-invalid={taken}
             aria-describedby={taken ? 'area-taken' : undefined}
           />

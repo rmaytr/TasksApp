@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Icon } from './Icon'
 import './Dialog.css'
 
@@ -10,16 +10,24 @@ interface DialogProps {
   wide?: boolean
 }
 
-/** Native modal <dialog>: free focus trapping, Escape to close and an inert background. */
+/**
+ * Native modal <dialog>: free focus trapping, Escape to close and an inert background.
+ * Mark the element that should get focus on open with `data-autofocus`.
+ */
 export function Dialog({ open, onClose, title, children, wide = false }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
   // Only a press that starts AND ends on the backdrop closes; a text drag released outside doesn't.
   const pressedBackdrop = useRef(false)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (open && !el.open) el.showModal()
+    if (open && !el.open) {
+      el.showModal()
+      // showModal() focuses the first button (Close); React's autoFocus ran earlier while hidden.
+      el.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+    }
     if (!open && el.open) el.close()
   }, [open])
 
@@ -27,7 +35,7 @@ export function Dialog({ open, onClose, title, children, wide = false }: DialogP
     <dialog
       ref={ref}
       className={`dialog${wide ? ' dialog--wide' : ''}`}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault()
@@ -44,7 +52,7 @@ export function Dialog({ open, onClose, title, children, wide = false }: DialogP
       {open && (
         <div className="dialog__panel">
           <header className="dialog__head">
-            <h2 id="dialog-title">{title}</h2>
+            <h2 id={titleId}>{title}</h2>
             <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
               <Icon name="close" />
             </button>

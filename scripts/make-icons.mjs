@@ -1,28 +1,27 @@
-// Renders the app mark to PNG icons with headless Chromium (run: node scripts/make-icons.mjs).
+// Renders the Cairn mark to PNG icons with headless Chromium (run: node scripts/make-icons.mjs).
 import { chromium } from '@playwright/test'
 
-const mark = (size, inset) => `
+const mark = (size, pad) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="#17212b"/>
-  <g transform="translate(50 50) scale(${(1 - inset * 2) * 1.0})">
-    <circle r="36" fill="none" stroke="#e8ece6" stroke-opacity=".3" stroke-width="3.4"/>
-    <circle r="22" fill="none" stroke="#e8ece6" stroke-opacity=".6" stroke-width="3.4"/>
-    <circle r="9.5" fill="#e8ece6"/>
-    <circle cx="19.5" cy="-17.5" r="7" fill="#f2b02e"/>
+  <rect width="100" height="100" fill="#4b3fc4"/>
+  <g transform="translate(50 52) scale(${1 - pad * 2})">
+    <ellipse cx="0" cy="22" rx="30" ry="12" fill="#ffffff" opacity="0.55"/>
+    <ellipse cx="-2.5" cy="1" rx="22" ry="10.5" fill="#ffffff" opacity="0.82"/>
+    <ellipse cx="2" cy="-19" rx="14" ry="8.6" fill="#f0a630"/>
   </g>
 </svg>`
 
 const targets = [
   ['public/icon-192.png', 192, 0.12],
   ['public/icon-512.png', 512, 0.12],
-  ['public/apple-touch-icon.png', 180, 0.1],
+  ['public/apple-touch-icon.png', 180, 0.08],
 ]
 
 const browser = await chromium.launch()
 const page = await browser.newPage()
-for (const [file, size, inset] of targets) {
+for (const [file, size, pad] of targets) {
   await page.setViewportSize({ width: size, height: size })
-  await page.setContent(`<body style="margin:0">${mark(size, inset)}</body>`)
-  await page.screenshot({ path: file, omitBackground: false })
+  await page.setContent(`<body style="margin:0">${mark(size, pad)}</body>`)
+  await page.screenshot({ path: file })
 }
 await browser.close()

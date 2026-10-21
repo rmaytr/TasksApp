@@ -29,7 +29,7 @@ interface DragState {
   active: boolean
 }
 
-export function RadarView() {
+export function RadarView({ areaId = null }: { areaId?: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [drag, setDrag] = useState<DragState | null>(null)
@@ -74,7 +74,10 @@ export function RadarView() {
   const toScreen = (x: number, y: number): { x: number; y: number } => ({ x: cx + x * scale, y: cy + y * scale })
   const toWorld = (sx: number, sy: number): { x: number; y: number } => ({ x: (sx - cx) / scale, y: (sy - cy) / scale })
 
-  const visibleAreas = useMemo(() => areas.filter((a) => !hidden.includes(a.id)), [areas, hidden])
+  const visibleAreas = useMemo(
+    () => areas.filter((a) => (areaId ? a.id === areaId : !hidden.includes(a.id))),
+    [areas, hidden, areaId],
+  )
   const sectors = useMemo(() => buildSectors(visibleAreas), [visibleAreas])
   const open = useMemo(() => tasks.filter((t) => !t.done), [tasks])
   const nodes = useMemo(() => layoutRadar(open, sectors, now), [open, sectors, now])
@@ -92,8 +95,9 @@ export function RadarView() {
 
   const labels = useMemo(() => {
     if (size.w === 0) return []
+    // Calm by default: only what's close gets a label; everything else shows on hover or focus.
     const screenNodes: ScreenNode[] = nodes
-      .filter((n) => n.task.id !== drag?.id)
+      .filter((n) => n.task.id !== drag?.id && (n.horizon === 'today' || n.horizon === 'week'))
       .map((n) => ({
         id: n.task.id,
         x: cx + n.x * scale,

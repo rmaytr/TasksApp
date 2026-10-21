@@ -16,7 +16,7 @@ const LIST_ITEM = /^(\s*)(?:[-*+]|\d+[.)])\s+(?:\[([ xX])\]\s*)?(.*)$/
 const HEADING = /^ {0,3}#{1,6}[ \t]+(\S.*)$/
 const CLOSING_HASHES = /[ \t]+#+$/
 const RULE = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/
-const EXPORT_TITLE = /^nearer export\b/i
+const EXPORT_TITLE = /^(?:nearer|cairn) export\b/i
 
 const DUE_EMOJI = /📅\s*(\d{4}-\d{2}-\d{2})/u
 const HIGH_EMOJI = /[⏫🔺]/u

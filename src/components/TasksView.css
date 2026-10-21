@@ -1,0 +1,138 @@
+.tasks {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.tasks__head {
+  display: grid;
+  gap: 14px;
+  width: min(860px, 100%);
+  margin: 0 auto;
+  padding: 28px 28px 18px;
+}
+
+.tasks--map .tasks__head,
+.tasks--radar .tasks__head {
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.tasks__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.tasks__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--c);
+}
+
+.tasks__title {
+  font-size: var(--step-3);
+  letter-spacing: -0.025em;
+}
+
+.tasks__spacer {
+  flex: 1;
+}
+
+.tasks__modes button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tasks__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tasks__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+  max-width: 320px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--ink-3);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tasks__search:hover {
+  border-color: var(--line-strong);
+}
+
+.tasks__search:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.tasks__search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--ink);
+}
+
+.tasks__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tasks__body {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.tasks--map .tasks__body,
+.tasks--radar .tasks__body {
+  overflow: hidden;
+}
+
+@media (max-width: 760px) {
+  .tasks__head {
+    padding: 16px 14px 12px;
+    gap: 12px;
+  }
+
+  .tasks__title {
+    font-size: var(--step-2);
+  }
+
+  .tasks__add {
+    display: none;
+  }
+
+  .tasks__modes {
+    order: 5;
+    width: 100%;
+  }
+
+  .tasks__search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .tasks__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+  }
+}

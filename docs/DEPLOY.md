@@ -1,6 +1,6 @@
-# Deploying Nearer
+# Deploying Cairn
 
-Nearer is two independent pieces:
+Cairn is two independent pieces:
 
 1. **The app**: static files on GitHub Pages at <https://rmaytr.github.io/TasksApp/>. This works
    on its own: everyone's tasks stay in their own browser and nobody can see anyone else's.
@@ -12,11 +12,11 @@ Nearer is two independent pieces:
 Already set up: every push to `main` runs tests, builds with `VITE_BASE=/TasksApp/` and deploys.
 Pages is set to **Source: GitHub Actions** (repo Settings → Pages).
 
-## Before turning on sync: give Nearer its own origin
+## Before turning on sync: give Cairn its own origin
 
 GitHub Pages serves **every** project of an account from one origin (`rmaytr.github.io`), so any other
-site you publish there can read Nearer's browser storage, including the sync session and the
-device's vault key. That's fine for the local-only app, but **move Nearer to its own origin before
+site you publish there can read Cairn's browser storage, including the sync session and the
+device's vault key. That's fine for the local-only app, but **move Cairn to its own origin before
 inviting friends to sync**. The free option is Cloudflare Pages:
 
 1. <https://dash.cloudflare.com> → *Workers & Pages* → *Create* → *Pages* → *Connect to Git* → pick
@@ -37,13 +37,13 @@ inviting friends to sync**. The free option is Cloudflare Pages:
 3. **Sign-in by email code:**
    - *Authentication → Sign In / Providers → Email*: enabled. "Confirm email" can stay on.
    - *Authentication → Emails → Templates → Magic Link*: make sure the body includes the code,
-     e.g. `Your Nearer code is {{ .Token }}` (keep the `{{ .ConfirmationURL }}` link too).
+     e.g. `Your Cairn code is {{ .Token }}` (keep the `{{ .ConfirmationURL }}` link too).
    - **Email delivery:** Supabase's built-in mailer only sends to your own team's addresses and is
      heavily rate-limited. To email friends, set up custom SMTP under *Authentication → Emails → SMTP
      Settings*. [Resend](https://resend.com) has a free tier: verify a sender domain (or use their
      test domain for yourself) and paste its SMTP host, user and password there.
-4. **URLs:** under *Authentication → URL Configuration*, set Site URL to your Nearer origin
-   (e.g. `https://nearer.pages.dev/`), and add `http://localhost:5173/` and `http://localhost:5174/`
+4. **URLs:** under *Authentication → URL Configuration*, set Site URL to your Cairn origin
+   (e.g. `https://cairn-tasks.pages.dev/`), and add `http://localhost:5173/` and `http://localhost:5174/`
    to Redirect URLs for local testing.
 5. **Keep it friends-only (the default):** under *Authentication → Sign In / Providers*, turn off
    **Allow new users to sign up**, then invite each friend (and yourself) from *Authentication → Users →
@@ -65,9 +65,26 @@ inviting friends to sync**. The free option is Cloudflare Pages:
 Create `TasksApp/.env.local` (git-ignored) with the same two `VITE_SUPABASE_*` values, then
 `npm run dev`.
 
+## 3. The assistant (optional)
+
+The assistant works with no server at all: each person picks **Settings → Assistant → My own API
+key** and pastes their own Anthropic key, which stays in their browser.
+
+To let friends use it without a key, deploy the small proxy in [`worker/`](../worker/README.md)
+(Cloudflare Workers free tier, about 10 minutes). It holds your Anthropic key as a secret, accepts
+only the invite codes you set, only from the origins you allow, and caps each code per day. Then:
+
+1. In GitHub → *Settings → Secrets and variables → Actions → Variables*, add `VITE_AI_PROXY_URL`
+   with the Worker URL (e.g. `https://cairn-ai.you.workers.dev`).
+2. Re-run the deploy workflow. The build adds that origin to the Content Security Policy, and an
+   **Invite code** option appears in the assistant settings.
+3. Set a monthly spend limit in the Anthropic console. The default model is Claude Opus 5.5 at low
+   effort, roughly two cents per task; set the Worker's `MODEL` var to `claude-haiku-5-5` for a cheaper,
+   faster model.
+
 ## Checklist before sharing with friends
 
-- [ ] Nearer runs on its own origin (Cloudflare Pages `*.pages.dev` or a custom domain), not `github.io`
+- [ ] Cairn runs on its own origin (Cloudflare Pages `*.pages.dev` or a custom domain), not `github.io`
 - [ ] RLS shows enabled on `vaults`; `anon` has no grants (the migration revokes them)
 - [ ] Supabase *Advisors → Security* shows no warnings for `vaults`
 - [ ] Sign-ups off; friends invited individually
@@ -75,3 +92,4 @@ Create `TasksApp/.env.local` (git-ignored) with the same two `VITE_SUPABASE_*` v
 - [ ] You signed in on two devices, created a passphrase on one, unlocked on the other, and saw edits sync
 - [ ] "Delete account" works on a throwaway account
 - [ ] Privacy page reachable at `/TasksApp/privacy.html`
+- [ ] If the assistant proxy is deployed: `ALLOWED_ORIGINS` lists only your app's origin, the KV rate limit is bound, and an Anthropic spend limit is set

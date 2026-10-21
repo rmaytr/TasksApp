@@ -23,6 +23,8 @@ export const taskSchema = z.object({
   spentMinutes: z.number().nonnegative().catch(0),
   repeat: z.enum(REPEATS).optional().catch(undefined),
   repeatOf: z.string().optional().catch(undefined),
+  low: z.boolean().optional().catch(undefined),
+  after: z.array(z.string()).optional().catch(undefined).transform((ids) => ids?.slice(0, 50)),
   repeatAnchor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
 })
 
@@ -38,12 +40,26 @@ export const tombstoneSchema = z.object({ id: z.string(), kind: z.enum(['task', 
 export const prefsSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']).catch('system'),
   onboarded: z.boolean().catch(false),
-  hiddenAreas: z.array(z.string()).catch([]),
+  /** Areas used to be hidden by clicking them; nothing can unhide them now, so old values are dropped. */
+  hiddenAreas: z.array(z.string()).catch([]).transform((): string[] => []),
   lastResetAt: z.number().nullable().catch(null),
   /** Single-key shortcuts can be switched off (WCAG 2.1.4). */
   shortcuts: z.boolean().catch(true),
   /** One-time hints the user has dismissed. */
   seenTips: z.array(z.string()).catch([]),
+  /** Deadline reminders: system notifications (if permitted) at these local hours. */
+  reminders: z
+    .object({ enabled: z.boolean(), morningHour: z.number().int().min(0).max(23), eveningHour: z.number().int().min(0).max(23) })
+    .catch({ enabled: true, morningHour: 9, eveningHour: 18 }),
+  /** Reminder keys already shown, so each fires once. */
+  firedReminders: z.array(z.string()).catch([]).transform((keys) => keys.slice(-1000)),
+  /** AI assistant: off, the shared proxy, or the user's own API key (stored separately, never synced). */
+  ai: z.enum(['off', 'proxy', 'byok']).catch('off'),
+  /** "Plan my day" order from the assistant, used on the day it was made. */
+  dayPlan: z
+    .object({ date: z.string(), ids: z.array(z.string()).max(200), summary: z.string().max(300) })
+    .nullable()
+    .catch(null),
 })
 
 export type Prefs = z.infer<typeof prefsSchema>
@@ -55,6 +71,10 @@ export const DEFAULT_PREFS: Prefs = {
   lastResetAt: null,
   shortcuts: true,
   seenTips: [],
+  reminders: { enabled: true, morningHour: 9, eveningHour: 18 },
+  firedReminders: [],
+  ai: 'off',
+  dayPlan: null,
 }
 
 export interface PersistedState {

@@ -5,12 +5,13 @@ import { newId } from '../lib/ids'
 import { DEFAULT_AREAS, MAX_AREAS } from '../model/defaults'
 import { nextOccurrence } from '../model/repeat'
 import { AREA_COLORS, type Area, type AreaColor, type Horizon, type Task, type TaskDraft, type Tombstone } from '../model/types'
+import { parseHash, routeToHash, type Route, type TasksMode, type View } from '../route'
+import { wouldCreateCycle } from '../plan/order'
 import { draftToTask } from './build'
 import { createDebouncedIdbStorage, requestPersistentStorage } from './persist'
 import { DEFAULT_PREFS, sanitizePersisted, type PersistedState, type Prefs } from './schema'
 
-export type View = 'radar' | 'map' | 'list' | 'focus' | 'reset'
-export const VIEWS: readonly View[] = ['radar', 'map', 'list', 'focus', 'reset']
+export type { TasksMode, View } from '../route'
 
 export interface Toast {
   id: string
@@ -27,6 +28,18 @@ interface Snapshot {
   hiddenAreas: string[]
   /** The toast that offers this undo; once it is gone the snapshot is stale. */
   toastId: string
+}
+
+/** One assistant result, applied to a captured task as a single undoable change. */
+export interface AssistPatch {
+  taskId: string
+  patch: Partial<Pick<Task, 'title' | 'areaId' | 'due' | 'horizon' | 'high' | 'low' | 'effort' | 'notes' | 'waiting' | 'after'>>
+  steps: string[]
+  /** Existing tasks that should now wait for this one. */
+  blocks: string[]
+  /** Further tasks the assistant split out of the same text. */
+  extras: TaskDraft[]
+  message: string
 }
 
 export interface DraftWithArea {
@@ -50,6 +63,14 @@ interface UiState {
   /** Saved data couldn't be read; writes are blocked so it isn't overwritten. */
   storageBlocked: boolean
   view: View
+  /** List, Map or Radar inside the Tasks view. */
+  tasksMode: TasksMode
+  /** Area page: Tasks filtered to one area. */
+  areaFilter: string | null
+  /** The global "Add a task" sheet (Home has its own inline capture). */
+  quickAddOpen: boolean
+  /** Tasks the assistant is still sorting (shows a small sparkle on them). */
+  assistBusy: string[]
   selectedId: string | null
   toast: Toast | null
   undoSnapshot: Snapshot | null
@@ -89,6 +110,13 @@ interface Actions {
   showToast: (message: string, undoable?: boolean, sticky?: boolean) => void
   dismissToast: () => void
   setView: (view: View) => void
+  /** Go anywhere: e.g. `navigate({ view: 'tasks', area: id })`. */
+  navigate: (to: Partial<Route>) => void
+  setQuickAddOpen: (open: boolean) => void
+  setAssistBusy: (taskId: string, busy: boolean) => void
+  applyAssist: (result: AssistPatch) => void
+  /** Adds "do after" links suggested by Plan my day (skips any that would form a loop). */
+  addDependencies: (edges: { taskId: string; after: string[] }[]) => void
   select: (id: string | null) => void
   setPrefs: (patch: Partial<Prefs>) => void
   setImportOpen: (open: boolean) => void
@@ -105,17 +133,33 @@ const STORAGE_KEY = 'nearer-state'
 const SCHEMA_VERSION = 1
 
 const touch = (task: Task, patch: Partial<Task>): Task => ({ ...task, ...patch, updatedAt: Date.now() })
+
+/** One captured task may make at most this many existing tasks wait for it. */
+const MAX_ASSIST_BLOCKS = 5
+
+/** Adds "taskId comes after `after`" unless it already exists or would close a loop. */
+function linkIfAcyclic(tasks: Task[], edge: { taskId: string; after: string }): Task[] {
+  const target = tasks.find((t) => t.id === edge.taskId)
+  if (!target || (target.after ?? []).includes(edge.after) || wouldCreateCycle(tasks, edge.taskId, edge.after)) return tasks
+  return tasks.map((t) => (t.id === edge.taskId ? touch(t, { after: [...(t.after ?? []), edge.after] }) : t))
+}
 const tomb = (id: string, kind: Tombstone['kind']): Tombstone => ({ id, kind, at: Date.now() })
+
+function withoutId(list: string[], id: string): string[] | undefined {
+  const rest = list.filter((x) => x !== id)
+  return rest.length ? rest : undefined
+}
 
 /** Assigned once the store exists; referencing the store inside its own config would break inference. */
 let canPersist = (): boolean => false
 
-/** Starting view from the URL hash, so a reload on #list doesn't push a bogus #radar entry. */
-function initialView(): View {
-  if (typeof location === 'undefined') return 'radar'
-  const fromHash = location.hash.replace('#', '') as View
-  return VIEWS.includes(fromHash) ? fromHash : 'radar'
+/** Starting route from the URL hash, so a reload on #area/x doesn't push a bogus entry. */
+function initialRoute(): Route {
+  return typeof location === 'undefined' ? parseHash('') : parseHash(location.hash)
 }
+
+export const currentHash = (s: Pick<StoreState, 'view' | 'tasksMode' | 'areaFilter'>): string =>
+  routeToHash({ view: s.view, mode: s.tasksMode, area: s.areaFilter })
 
 export const useStore = create<StoreState>()(
   persist(
@@ -153,7 +197,11 @@ export const useStore = create<StoreState>()(
         prefs: DEFAULT_PREFS,
         hydrated: false,
         storageBlocked: false,
-        view: initialView(),
+        view: initialRoute().view,
+        tasksMode: initialRoute().mode,
+        areaFilter: initialRoute().area,
+        quickAddOpen: false,
+        assistBusy: [],
         selectedId: null,
         toast: null,
         undoSnapshot: null,
@@ -233,7 +281,10 @@ export const useStore = create<StoreState>()(
           if (!task) return
           withUndo(`Deleted "${task.title}"`, () =>
             set((s) => ({
-              tasks: s.tasks.filter((t) => t.id !== id),
+              // Tasks that waited for this one stop waiting.
+              tasks: s.tasks
+                .filter((t) => t.id !== id)
+                .map((t) => (t.after?.includes(id) ? touch(t, { after: withoutId(t.after, id) }) : t)),
               tombstones: [...s.tombstones, tomb(id, 'task')],
               selectedId: s.selectedId === id ? null : s.selectedId,
             })),
@@ -284,6 +335,7 @@ export const useStore = create<StoreState>()(
               tasks: s.tasks.map((t) => (t.areaId === id ? touch(t, { areaId: moveTasksTo }) : t)),
               tombstones: [...s.tombstones, tomb(id, 'area')],
               prefs: { ...s.prefs, hiddenAreas: s.prefs.hiddenAreas.filter((h) => h !== id) },
+              areaFilter: s.areaFilter === id ? moveTasksTo : s.areaFilter,
             })),
           )
         },
@@ -351,13 +403,63 @@ export const useStore = create<StoreState>()(
         showToast: (message, undoable = false, sticky = false) =>
           set({ toast: { id: newId(), message, undoable, sticky } }),
         dismissToast: () => set({ toast: null, undoSnapshot: null }),
+        setView: (view) => get().navigate({ view, area: view === 'tasks' ? get().areaFilter : null }),
         // Focus and Reset show one task at a time; an open detail panel there would just duplicate it.
-        setView: (view) =>
-          set((s) => ({
-            view,
-            selectedId: view === 'focus' || view === 'reset' ? null : s.selectedId,
-            toast: s.toast?.undoable || s.toast?.sticky ? s.toast : null,
-          })),
+        navigate: (to) =>
+          set((s) => {
+            const view = to.view ?? s.view
+            return {
+              view,
+              tasksMode: to.mode ?? s.tasksMode,
+              areaFilter: to.area !== undefined ? to.area : view === 'tasks' ? s.areaFilter : null,
+              selectedId: view === 'focus' || view === 'reset' ? null : s.selectedId,
+              toast: s.toast?.undoable || s.toast?.sticky ? s.toast : null,
+            }
+          }),
+        setQuickAddOpen: (open) => set({ quickAddOpen: open }),
+        setAssistBusy: (taskId, busy) =>
+          set((s) => ({ assistBusy: busy ? [...s.assistBusy, taskId] : s.assistBusy.filter((id) => id !== taskId) })),
+
+        applyAssist: ({ taskId, patch, steps, blocks, extras, message }) => {
+          const now = new Date()
+          withUndo(message, () =>
+            set((s) => {
+              const ids = new Set(s.tasks.map((t) => t.id))
+              const fallbackArea = patch.areaId ?? s.tasks.find((t) => t.id === taskId)?.areaId ?? s.areas[0]?.id ?? ''
+              const extraTasks = extras.map((d) => {
+                const areaId = s.areas.find((a) => a.name.toLowerCase() === (d.area ?? '').toLowerCase())?.id ?? fallbackArea
+                return draftToTask(d, areaId, now, 'week')
+              })
+              const patched = s.tasks.map((t) =>
+                t.id === taskId
+                  ? touch(t, {
+                      ...patch,
+                      after: t.after,
+                      steps: [...t.steps, ...steps.map((title) => ({ id: newId(), title, done: false }))],
+                    })
+                  : t,
+              )
+              // Model output is untrusted: add each link only if it points at a real task and keeps the graph acyclic.
+              const edges = [
+                ...(patch.after ?? []).map((after) => ({ taskId, after })),
+                ...blocks.slice(0, MAX_ASSIST_BLOCKS).map((blocked) => ({ taskId: blocked, after: taskId })),
+              ].filter((e) => ids.has(e.taskId) && ids.has(e.after))
+              const tasks = edges.reduce(linkIfAcyclic, patched)
+              return { tasks: [...tasks, ...extraTasks] }
+            }),
+          )
+        },
+
+        addDependencies: (edges) => {
+          const { tasks } = get()
+          const ids = new Set(tasks.map((t) => t.id))
+          const requested = edges.flatMap((e) => e.after.map((after) => ({ taskId: e.taskId, after })))
+          // Work out what will really change first, so a no-op never replaces a pending Undo.
+          const linked = requested.filter((e) => ids.has(e.after)).reduce(linkIfAcyclic, tasks)
+          const added = linked.reduce((n, t, i) => n + ((t.after?.length ?? 0) - (tasks[i]?.after?.length ?? 0)), 0)
+          if (added === 0) return
+          withUndo(`Linked ${added} ${added === 1 ? 'task' : 'tasks'} in order`, () => set({ tasks: linked }))
+        },
         select: (id) => set({ selectedId: id }),
         setPrefs: (patch) => set((s) => ({ prefs: { ...s.prefs, ...patch } })),
         setImportOpen: (open) => set({ importOpen: open }),

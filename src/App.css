@@ -1,6 +1,6 @@
 .splash {
   height: 100dvh;
-  background: var(--bg);
+  background: var(--canvas);
 }
 
 .app {
@@ -17,16 +17,20 @@
   min-height: 0;
 }
 
-.stage {
-  position: relative;
-  min-height: 0;
-  overflow: hidden;
+.main:focus {
+  outline: none;
 }
 
-.stage[data-view='list'],
-.stage[data-view='focus'],
-.stage[data-view='reset'] {
+.stage {
+  /* Row 2 even when the phone top bar is hidden, so map and radar get the full height. */
+  grid-row: 2;
+  position: relative;
+  min-height: 0;
   overflow-y: auto;
+}
+
+.stage[data-view='tasks'] {
+  overflow: hidden;
 }
 
 @media (max-width: 760px) {

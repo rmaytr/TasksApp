@@ -1,0 +1,48 @@
+.onboard {
+  gap: 18px;
+}
+
+.onboard__mark {
+  display: grid;
+}
+
+.onboard__lead {
+  font-size: var(--step-2);
+  font-weight: 560;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.onboard__points {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-2);
+}
+
+.onboard__points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.onboard__points svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--primary);
+}
+
+.onboard__actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.onboard__fine {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+  text-align: center;
+}

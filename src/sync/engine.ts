@@ -136,7 +136,7 @@ async function openDoc(key: CryptoKey, record: VaultRecord, owner: string | unde
   const raw = await open(key, { iv: record.iv, ciphertext: record.ciphertext }, vaultContext(owner, record.version))
   const isCurrent = typeof raw === 'object' && raw !== null && !Array.isArray(raw) && (raw as { v?: unknown }).v === 1
   if (!isCurrent) {
-    throw new VaultFormatError('This vault was written by a different version of Nearer. Update the app and try again.')
+    throw new VaultFormatError('This vault was written by a different version of Cairn. Update the app and try again.')
   }
   return parseSyncDoc(raw)
 }

@@ -34,6 +34,8 @@ const taskSchema = z
     spentMinutes: z.number().nonnegative().catch(0),
     repeat: z.enum(REPEATS).optional().catch(undefined),
     repeatOf: z.string().optional().catch(undefined),
+    low: z.boolean().optional().catch(undefined),
+    after: z.array(z.string()).optional().catch(undefined).transform((ids) => ids?.slice(0, 50)),
     repeatAnchor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
   })
   // Drop undefined optionals so documents compare equal across devices.

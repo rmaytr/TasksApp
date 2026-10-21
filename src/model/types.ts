@@ -55,6 +55,8 @@ export interface Task {
   /** ISO date `YYYY-MM-DD`, local calendar day. */
   due: string | null
   high: boolean
+  /** Low priority ("whenever"). Never true together with `high`. Missing on old data = false. */
+  low?: boolean
   effort: Effort
   /** What this task is blocked on, e.g. "lottery registration opens". */
   waiting: string | null
@@ -74,6 +76,16 @@ export interface Task {
   repeatOf?: string
   /** First due date of a monthly series, so month-end dates don't drift. */
   repeatAnchor?: string
+  /** Ids of tasks that should be finished before this one ("do after"). */
+  after?: string[]
+}
+
+export type Priority = 'high' | 'normal' | 'low'
+
+export const PRIORITY_LABEL: Record<Priority, string> = { high: 'High', normal: 'Normal', low: 'Low' }
+
+export function priorityOf(task: Pick<Task, 'high' | 'low'>): Priority {
+  return task.high ? 'high' : task.low ? 'low' : 'normal'
 }
 
 /** Shape produced by importers and the quick-capture parser before ids/timestamps exist. */
@@ -85,6 +97,7 @@ export interface TaskDraft {
   horizon?: Horizon
   due?: string | null
   high?: boolean
+  low?: boolean
   effort?: Effort
   waiting?: string | null
   plan?: string | null

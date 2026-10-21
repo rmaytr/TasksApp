@@ -131,6 +131,98 @@ describe('parseDateToken: weekdays', () => {
   })
 })
 
+describe('parseDateToken: weekend, end of week, end of day', () => {
+  // 2026-10-19 is a Monday; 2026-10-25 is a Sunday.
+  const day = (d: number): Date => new Date(2026, 9, d, 15, 30)
+  const MON = day(19)
+  const WED = NOW
+  const FRI = day(23)
+  const SAT = day(24)
+  const SUN = day(25)
+
+  it.each([
+    ['this weekend', '2026-10-24'],
+    ['weekend', '2026-10-24'],
+    ['on the weekend', '2026-10-24'],
+    ['clean the garage this weekend', '2026-10-24'],
+    ['Weekend plans', '2026-10-24'],
+    ['THIS WEEKEND', '2026-10-24'],
+  ])('%s -> the coming Saturday from a Wednesday', (text, due) => {
+    expect(parseDateToken(text, WED)?.due).toBe(due)
+  })
+
+  it('returns the exact phrase matched for weekend wording', () => {
+    expect(parseDateToken('clean the garage this weekend', WED)).toEqual({ due: '2026-10-24', match: 'this weekend' })
+    expect(parseDateToken('hike on the weekend', WED)).toEqual({ due: '2026-10-24', match: 'on the weekend' })
+    expect(parseDateToken('hike weekend', WED)).toEqual({ due: '2026-10-24', match: 'weekend' })
+  })
+
+  it.each([
+    [MON, '2026-10-24'],
+    [FRI, '2026-10-24'],
+    [SAT, '2026-10-24'],
+    [SUN, '2026-10-25'],
+  ])('"this weekend" from %s', (now, due) => {
+    expect(parseDateToken('this weekend', now)?.due).toBe(due)
+  })
+
+  it.each([
+    [MON, '2026-10-31'],
+    [WED, '2026-10-31'],
+    [FRI, '2026-10-31'],
+    [SAT, '2026-10-31'],
+    [SUN, '2026-10-31'],
+    [day(26), '2026-11-07'],
+  ])('"next weekend" from %s is the Saturday after the coming one', (now, due) => {
+    expect(parseDateToken('next weekend', now)).toEqual({ due, match: 'next weekend' })
+  })
+
+  it.each([
+    ['end of week', '2026-10-23'],
+    ['eow', '2026-10-23'],
+    ['EOW', '2026-10-23'],
+    ['end of the week', '2026-10-23'],
+    ['by the end of the week', '2026-10-23'],
+    ['send report by end of week', '2026-10-23'],
+  ])('%s -> this Friday from a Wednesday', (text, due) => {
+    expect(parseDateToken(text, WED)?.due).toBe(due)
+  })
+
+  it('"by the end of the week" is matched whole', () => {
+    expect(parseDateToken('finish by the end of the week please', WED)?.match).toBe('by the end of the week')
+  })
+
+  it.each([
+    [MON, '2026-10-23'],
+    [FRI, '2026-10-23'],
+    [SAT, '2026-10-30'],
+    [SUN, '2026-10-30'],
+  ])('"end of week" from %s', (now, due) => {
+    expect(parseDateToken('end of week', now)?.due).toBe(due)
+  })
+
+  it.each([
+    ['end of day', 'end of day'],
+    ['finish eod', 'eod'],
+    ['by end of the day', 'by end of the day'],
+    ['EOD', 'EOD'],
+  ])('%s -> today', (text, match) => {
+    expect(parseDateToken(text, WED)).toEqual({ due: '2026-10-21', match })
+  })
+
+  it('works across a DST change', () => {
+    // US fall-back is Sunday 2026-11-01; Friday 2026-10-30 + weekend crosses it.
+    const fri = new Date(2026, 9, 30, 12)
+    expect(parseDateToken('next weekend', fri)?.due).toBe('2026-11-07')
+    expect(parseDateToken('this weekend', fri)?.due).toBe('2026-10-31')
+    expect(parseDateToken('end of week', new Date(2026, 10, 1, 12))?.due).toBe('2026-11-06')
+  })
+
+  it('an earlier phrase wins over a later weekend phrase', () => {
+    expect(parseDateToken('call tomorrow or this weekend', WED)?.due).toBe('2026-10-22')
+  })
+})
+
 describe('parseDateToken: month and day', () => {
   it.each([
     ['nov 3', '2026-11-03', 'nov 3'],
@@ -225,6 +317,15 @@ describe('parseDateToken: false positives', () => {
     'decide on the plan',
     'marching band',
     '#fri',
+    'weekender bag',
+    'weekends are for resting',
+    'weekend’s chores',
+    'midweek check-in',
+    'eowyn',
+    'eodie',
+    'send of day',
+    'next weekender',
+    '#weekend',
   ])('%j -> null', (text) => {
     expect(parseDateToken(text, NOW)).toBeNull()
   })

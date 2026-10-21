@@ -1,0 +1,23 @@
+# Cairn AI proxy: a Cloudflare Worker that keeps the operator's Anthropic key server-side.
+# Secrets are NOT set here; use `npx wrangler secret put <NAME>`:
+#   ANTHROPIC_API_KEY   your Anthropic key
+#   INVITE_CODES        comma-separated codes, 16+ characters each (`openssl rand -hex 12` per friend)
+name = "cairn-ai"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Exact origins (scheme + host [+ port], no trailing slash) allowed to call the proxy from a browser.
+# Edit this before deploying: add your deployed app's origin.
+ALLOWED_ORIGINS = "http://localhost:5173"
+# MODEL = "claude-haiku-5-5"   # much cheaper than the default claude-opus-5-5
+# DAILY_LIMIT = "150"          # requests per invite code per UTC day
+
+# Required (the Worker refuses requests without it): per-code daily counters and
+# failed-code throttling. Create the namespace with
+#   npx wrangler kv namespace create RATE_KV
+# then paste the printed id here and uncomment.
+# [[kv_namespaces]]
+# binding = "RATE_KV"
+# id = "<your-kv-namespace-id>"

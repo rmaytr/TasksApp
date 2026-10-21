@@ -2,15 +2,17 @@ import { useEffect } from 'react'
 import { initCloud } from './cloud/controller'
 import { useMediaQuery } from './hooks'
 import { onStorageError } from './store/persist'
-import { useStore, VIEWS, type View } from './store/useStore'
+import { parseHash } from './route'
+import { currentHash, useStore, type View } from './store/useStore'
 
 export const VIEW_TITLE: Record<View, string> = {
-  radar: 'Radar',
-  map: 'Map',
-  list: 'List',
+  home: 'Today',
+  tasks: 'Tasks',
   focus: 'Focus',
   reset: 'Weekly reset',
 }
+
+const SHORTCUT_VIEWS: readonly View[] = ['home', 'tasks', 'focus']
 
 /** Applies the chosen or system theme to <html data-theme> and the browser chrome color. */
 export function useTheme(): void {
@@ -20,31 +22,29 @@ export function useTheme(): void {
   useEffect(() => {
     document.documentElement.dataset.theme = resolved
     const meta = document.querySelector('meta[name="theme-color"]')
-    meta?.setAttribute('content', resolved === 'dark' ? '#121920' : '#e8ece6')
+    meta?.setAttribute('content', resolved === 'dark' ? '#14121b' : '#f3f1f8')
   }, [resolved])
 }
 
-/** Mirrors the active view in location.hash so refresh and the back button behave. */
+/** Mirrors the route in location.hash so refresh and the back button behave. */
 export function useHashView(): void {
+  const hash = useStore(currentHash)
+  const navigate = useStore((s) => s.navigate)
   const view = useStore((s) => s.view)
-  const setView = useStore((s) => s.setView)
+  const areaName = useStore((s) => s.areas.find((a) => a.id === s.areaFilter)?.name)
 
   useEffect(() => {
-    const read = (): void => {
-      const fromHash = location.hash.replace('#', '') as View
-      if (VIEWS.includes(fromHash)) setView(fromHash)
-    }
-    read()
+    const read = (): void => navigate(parseHash(location.hash))
     window.addEventListener('hashchange', read)
     return () => window.removeEventListener('hashchange', read)
-  }, [setView])
+  }, [navigate])
 
   useEffect(() => {
-    document.title = `${VIEW_TITLE[view]} · Nearer`
-    if (location.hash === `#${view}`) return
-    if (location.hash) history.pushState(null, '', `#${view}`)
-    else history.replaceState(null, '', `#${view}`)
-  }, [view])
+    document.title = `${areaName ?? VIEW_TITLE[view]} · Cairn`
+    if (location.hash === hash) return
+    if (location.hash) history.pushState(null, '', hash)
+    else history.replaceState(null, '', hash)
+  }, [hash, view, areaName])
 }
 
 export const isTyping = (target: EventTarget | null): boolean =>
@@ -69,9 +69,11 @@ export function useShortcuts(): void {
       if (!s.prefs.shortcuts) return
       if (e.key === '/' || e.key === 'n') {
         e.preventDefault()
-        document.getElementById('capture-input')?.focus()
-      } else if (e.key >= '1' && e.key <= String(VIEWS.length)) {
-        s.setView(VIEWS[Number(e.key) - 1])
+        const inline = document.getElementById('capture-input')
+        if (inline) inline.focus()
+        else s.setQuickAddOpen(true)
+      } else if (e.key >= '1' && e.key <= String(SHORTCUT_VIEWS.length)) {
+        s.navigate({ view: SHORTCUT_VIEWS[Number(e.key) - 1], area: null })
       } else if (e.key === 'i') {
         s.setImportOpen(true)
       } else if (e.key === 'Escape' && s.selectedId) {

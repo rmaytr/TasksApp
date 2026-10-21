@@ -19,7 +19,7 @@ function linkPath(link: MapLink): string {
   return `M ${from.x} ${from.y} C ${mid} ${from.y}, ${mid} ${to.y}, ${to.x} ${to.y}`
 }
 
-export function MapView() {
+export function MapView({ areaId = null }: { areaId?: string | null }) {
   const areas = useStore((s) => s.areas)
   const tasks = useStore((s) => s.tasks)
   const hidden = useStore((s) => s.prefs.hiddenAreas)
@@ -39,7 +39,10 @@ export function MapView() {
     return () => ro.disconnect()
   }, [])
 
-  const visibleAreas = useMemo(() => areas.filter((a) => !hidden.includes(a.id)), [areas, hidden])
+  const visibleAreas = useMemo(
+    () => areas.filter((a) => (areaId ? a.id === areaId : !hidden.includes(a.id))),
+    [areas, hidden, areaId],
+  )
   const tasksByArea = useMemo(() => {
     const map = new Map<string, Task[]>()
     for (const t of tasks) if (!t.done) map.set(t.areaId, [...(map.get(t.areaId) ?? []), t])

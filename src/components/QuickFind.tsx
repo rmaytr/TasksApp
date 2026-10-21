@@ -35,7 +35,7 @@ function score(task: Task, words: string[]): number {
 function FindBody({ onDone }: { onDone: () => void }) {
   const tasks = useStore((s) => s.tasks)
   const view = useStore((s) => s.view)
-  const setView = useStore((s) => s.setView)
+  const navigate = useStore((s) => s.navigate)
   const select = useStore((s) => s.select)
   const areaMap = useAreaMap()
   const now = useNow()
@@ -61,7 +61,7 @@ function FindBody({ onDone }: { onDone: () => void }) {
   }, [current, results])
 
   const openTask = (task: Task): void => {
-    if (view === 'focus' || view === 'reset') setView('list')
+    if (view === 'focus' || view === 'reset') navigate({ view: 'tasks', mode: 'list' })
     select(task.id)
     onDone()
   }
@@ -84,6 +84,7 @@ function FindBody({ onDone }: { onDone: () => void }) {
       <input
         className="field find__input"
         autoFocus
+        data-autofocus
         value={query}
         onChange={(e) => {
           setQuery(e.target.value)

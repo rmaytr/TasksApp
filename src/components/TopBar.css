@@ -1,27 +1,29 @@
 .topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--topbar);
-  padding: 12px 20px;
-}
-
-.topbar__brand {
-  display: none;
-}
-
-.topbar__actions {
   display: none;
 }
 
 @media (max-width: 760px) {
   .topbar {
-    gap: 6px;
-    padding: 10px 10px 8px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 56px;
+    padding: 6px 8px 6px 10px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--canvas) 90%, transparent);
+    backdrop-filter: blur(14px);
   }
 
-  .topbar__brand,
+  .topbar .brand__name {
+    font-size: var(--step-1);
+  }
+
   .topbar__actions {
     display: flex;
+    align-items: center;
   }
 }

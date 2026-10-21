@@ -245,8 +245,8 @@ function Summary({ tally, onAgain }: { tally: Record<Verdict, number>; onAgain: 
           ))}
       </ul>
       <div className="reset__end-actions">
-        <button type="button" className="btn btn--primary" onClick={() => setView('radar')}>
-          See the radar
+        <button type="button" className="btn btn--primary" onClick={() => setView('home')}>
+          Back to Today
         </button>
         <button type="button" className="btn" onClick={() => setView('focus')}>
           Start on today

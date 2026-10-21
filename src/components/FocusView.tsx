@@ -42,8 +42,8 @@ export function FocusView() {
               Show skipped tasks again
             </button>
           )}
-          <button type="button" className="btn btn--primary" onClick={() => setView('radar')}>
-            Back to radar
+          <button type="button" className="btn btn--primary" onClick={() => setView('home')}>
+            Back to Today
           </button>
         </div>
       </div>

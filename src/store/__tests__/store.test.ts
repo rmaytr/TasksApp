@@ -124,4 +124,58 @@ describe('sanitizePersisted', () => {
     expect(result.tasks.every((t) => t.areaId === 'a')).toBe(true)
     expect(result.tasks[1]).toMatchObject({ horizon: 'later', due: null })
   })
+
+  it('un-hides areas hidden by the old sidebar, which has no way to show them again', () => {
+    const result = sanitizePersisted({ prefs: { hiddenAreas: ['classes', 'life'] } })
+    expect(result.prefs.hiddenAreas).toEqual([])
+  })
+})
+
+describe('dependencies', () => {
+  const after = (id: string) => state().tasks.find((t) => t.id === id)?.after
+  const assist = (taskId: string, extra: { after?: string[]; blocks?: string[] }) =>
+    state().applyAssist({ taskId, patch: extra.after ? { after: extra.after } : {}, steps: [], blocks: extra.blocks ?? [], extras: [], message: 'Sorted' })
+
+  it('never lets the assistant create a loop', () => {
+    const a = state().addTask({ title: 'A' }, 'life')
+    const b = state().addTask({ title: 'B' }, 'life')
+    state().addDependencies([{ taskId: a, after: [b] }])
+    const t = state().addTask({ title: 'New' }, 'life')
+    // New after A, and B after New, would close B -> New -> A -> B.
+    assist(t, { after: [a], blocks: [b] })
+    expect(after(t)).toEqual([a])
+    expect(after(b)).toBeUndefined()
+  })
+
+  it('keeps existing links and ignores ids that do not exist', () => {
+    const a = state().addTask({ title: 'A' }, 'life')
+    const t = state().addTask({ title: 'T' }, 'life')
+    state().addDependencies([{ taskId: t, after: [a] }])
+    assist(t, { after: ['ghost'] })
+    expect(after(t)).toEqual([a])
+  })
+
+  it('caps how many existing tasks one capture can make wait', () => {
+    const others = Array.from({ length: 8 }, (_, i) => state().addTask({ title: `O${i}` }, 'life'))
+    const t = state().addTask({ title: 'T' }, 'life')
+    assist(t, { blocks: others })
+    expect(others.filter((id) => after(id)?.includes(t))).toHaveLength(5)
+  })
+
+  it('unlinks dependents when a task is deleted', () => {
+    const a = state().addTask({ title: 'A' }, 'life')
+    const b = state().addTask({ title: 'B' }, 'life')
+    state().addDependencies([{ taskId: b, after: [a] }])
+    state().deleteTask(a)
+    expect(after(b)).toBeUndefined()
+  })
+
+  it('a link that changes nothing keeps the pending Undo', () => {
+    const a = state().addTask({ title: 'A' }, 'life')
+    const b = state().addTask({ title: 'B' }, 'life')
+    state().addDependencies([{ taskId: b, after: [a] }])
+    const toast = state().toast
+    state().addDependencies([{ taskId: b, after: [a] }, { taskId: a, after: [b] }])
+    expect(state().toast).toBe(toast)
+  })
 })
