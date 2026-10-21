@@ -78,9 +78,9 @@ only the invite codes you set, only from the origins you allow, and caps each co
    with the Worker URL (e.g. `https://cairn-ai.you.workers.dev`).
 2. Re-run the deploy workflow. The build adds that origin to the Content Security Policy, and an
    **Invite code** option appears in the assistant settings.
-3. Set a monthly spend limit in the Anthropic console. The default model is Claude Opus 5.5 at low
-   effort, roughly two cents per task; set the Worker's `MODEL` var to `claude-haiku-5-5` for a cheaper,
-   faster model.
+3. Set a monthly spend limit in the Anthropic console. The default model is Claude Haiku 5.5 at low
+   effort, about a tenth of a cent per task (roughly 1,000 tasks per dollar). The Worker's `MODEL`
+   var can pick a bigger model if you ever want one.
 
 ## Checklist before sharing with friends
 

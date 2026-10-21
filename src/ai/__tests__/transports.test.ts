@@ -115,12 +115,12 @@ describe('createByokTransport', () => {
 
   it('analyzes through the injected client with the chosen model', async () => {
     const { parse, makeClient } = fakeFactory({ tasks: [suggestion()] })
-    const transport = createByokTransport('sk-ant-test', 'claude-haiku-5-5', makeClient)
+    const transport = createByokTransport('sk-ant-test', 'claude-sonnet-5-5', makeClient)
     const result = await transport.analyze('Publish the domain', CTX)
 
     expect(result.tasks[0]!.title).toBe('Publish the BOR Realty domain')
     expect(makeClient).toHaveBeenCalledWith('sk-ant-test')
-    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-haiku-5-5')
+    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-sonnet-5-5')
   })
 
   it('defaults to the default model and plans', async () => {
@@ -131,7 +131,7 @@ describe('createByokTransport', () => {
     })
     const result = await createByokTransport('k', undefined, makeClient).plan(CTX)
     expect(result.order).toHaveLength(1)
-    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-opus-5-5')
+    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-haiku-5-5')
   })
 
   it('creates the client once, lazily', async () => {

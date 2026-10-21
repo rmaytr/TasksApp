@@ -88,11 +88,10 @@ Unit tests run from the repo root with a fake Claude client and need no key or n
 
 ## Cost
 
-The default model is `claude-opus-5-5` at low effort: a typical call is about 2-4k tokens in and
-500 out, roughly **$0.02 per request** (the long system prompt is cached, which helps). Set the
-`MODEL` var to `claude-haiku-5-5` for about 40 times less. With the default limit of 150
-requests per code per day, one code costs at most about $3 a day on Opus, or under 10 cents on
-Haiku.
+The default model is `claude-haiku-5-5` at low effort ($0.10 / $0.50 per million tokens): a
+typical call is about 2-4k tokens in and under 1k out, roughly **$0.001 per request**. With the
+default limit of 150 requests per code per day, one code costs at most about 15 cents a day. The
+`MODEL` var can pick a bigger model (e.g. `claude-sonnet-5-5`) at a higher price.
 
 ## Notes
 

@@ -11,11 +11,17 @@ import type { AiAnalyzeResult, AiContext, AiPlanResult } from './types'
  * both go through here, so prompts, request shape, error mapping and sanitizing live in one place.
  */
 
-export const DEFAULT_MODEL = 'claude-opus-5-5'
+/**
+ * Haiku 5.5: these are short extraction and ordering jobs, and it costs about 1/40th of Opus 5.5
+ * ($0.10 / $0.50 per MTok vs $4 / $20). Operators can still pick another model (Worker `MODEL` var).
+ */
+export const DEFAULT_MODEL = 'claude-haiku-5-5'
 
 const MAX_TOKENS = 4000
 /** Lets the API retry a policy refusal on a substitute model instead of failing the request. */
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01'
+/** Haiku has no server-side fallback; sending the option there only adds a beta header. */
+const hasFallback = (model: string): boolean => !model.startsWith('claude-haiku')
 
 /** The slice of the SDK client we use; the real `Anthropic` client satisfies it, so tests can fake it. */
 export interface ClaudeClient {
@@ -67,9 +73,8 @@ async function run<T>(spec: CallSpec<T>): Promise<T> {
       {
         model: spec.model,
         max_tokens: MAX_TOKENS,
-        betas: [FALLBACK_BETA],
-        fallbacks: 'default',
-        // No `thinking` and no temperature: Opus 5.5 always thinks and rejects overrides.
+        ...(hasFallback(spec.model) && { betas: [FALLBACK_BETA], fallbacks: 'default' as const }),
+        // No `thinking` and no temperature: current models think adaptively and reject sampling overrides.
         output_config: { effort: 'low', format: zodOutputFormat(spec.schema) },
         system: [{ type: 'text', text: spec.system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: spec.user }],

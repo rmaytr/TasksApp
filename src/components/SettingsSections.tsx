@@ -163,7 +163,7 @@ export function AssistantSettings() {
       {mode === 'byok' && (
         <p className="settings__note">
           Your key is stored only in this browser and sent only to api.anthropic.com. Usage is billed to your Anthropic
-          account (about two cents per task with the default model).
+          account (well under a cent per task).
         </p>
       )}
     </section>

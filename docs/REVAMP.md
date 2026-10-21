@@ -62,6 +62,6 @@ zero-friction capture** are the bar.
 - Two modes: **your own API key** (kept on the device, sent only to api.anthropic.com) or the
   **Cairn proxy** (a Cloudflare Worker holding the operator's key, gated by invite codes and
   rate limits).
-- Default model `claude-opus-5-5` at low effort. A typical call is about 2–4k tokens in and 500 out,
-  roughly $0.02. The proxy's `MODEL` variable can switch to `claude-haiku-5-5`, which is about
-  40 times cheaper.
+- Default model `claude-haiku-5-5` at low effort: these are short extraction and ordering jobs.
+  A typical call is about 2–4k tokens in and under 1k out, about $0.001 ($0.10 / $0.50 per MTok,
+  1/40th of Opus 5.5). The proxy's `MODEL` variable can pick a bigger model.

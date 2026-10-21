@@ -41,10 +41,11 @@ describe('callAnalyze', () => {
     expect(result.tasks[0]!.blocks).toEqual(['t-resume', 't-portfolio'])
 
     const params = parse.mock.calls[0]![0] as Record<string, any>
-    expect(params.model).toBe('claude-opus-5-5')
+    expect(params.model).toBe('claude-haiku-5-5')
     expect(params.max_tokens).toBe(4000)
-    expect(params.betas).toEqual(['server-side-fallback-2026-07-01'])
-    expect(params.fallbacks).toBe('default')
+    // Haiku has no server-side fallback, so the option isn't sent.
+    expect(params).not.toHaveProperty('betas')
+    expect(params).not.toHaveProperty('fallbacks')
     expect(params.output_config.effort).toBe('low')
     expect(params.output_config.format.type).toBe('json_schema')
     expect(params.system).toEqual([{ type: 'text', text: ANALYZE_SYSTEM, cache_control: { type: 'ephemeral' } }])
@@ -53,6 +54,14 @@ describe('callAnalyze', () => {
     expect(params.messages[0].content).toContain('Publish the domain this weekend')
     expect(params).not.toHaveProperty('thinking')
     expect(params).not.toHaveProperty('temperature')
+  })
+
+  it('asks for the refusal fallback on models that have one', async () => {
+    const { client, parse } = fakeClient({ parsed_output: { tasks: [suggestion()] } })
+    await callAnalyze(client, 'claude-opus-5-5', 'Call home', CTX)
+    const params = parse.mock.calls[0]![0] as Record<string, any>
+    expect(params.betas).toEqual(['server-side-fallback-2026-07-01'])
+    expect(params.fallbacks).toBe('default')
   })
 
   it('forwards the abort signal and a custom model', async () => {

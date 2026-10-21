@@ -297,7 +297,7 @@ describe('request validation', () => {
 describe('calling Claude', () => {
   it('returns the sanitized analysis and uses the configured model', async () => {
     const { deps, parse, makeClient } = fakeDeps(analyzeOutput)
-    const response = await handle(post('/analyze', analyzeBody), env({ MODEL: 'claude-haiku-5-5' }), deps)
+    const response = await handle(post('/analyze', analyzeBody), env({ MODEL: 'claude-sonnet-5-5' }), deps)
 
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toContain('application/json')
@@ -306,13 +306,13 @@ describe('calling Claude', () => {
     expect(body.tasks[0]!.title).toBe('Publish the BOR Realty domain')
     expect(body.tasks[0]!.blocks).toEqual(['t-resume', 't-portfolio'])
     expect(makeClient).toHaveBeenCalledWith('sk-test')
-    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-haiku-5-5')
+    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-sonnet-5-5')
   })
 
   it('uses the default model when MODEL is unset', async () => {
     const { deps, parse } = fakeDeps(analyzeOutput)
     await handle(post('/analyze', analyzeBody), env(), deps)
-    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-opus-5-5')
+    expect((parse.mock.calls[0]![0] as { model: string }).model).toBe('claude-haiku-5-5')
   })
 
   it('returns the plan', async () => {

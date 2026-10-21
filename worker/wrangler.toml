@@ -11,7 +11,7 @@ compatibility_flags = ["nodejs_compat"]
 # Exact origins (scheme + host [+ port], no trailing slash) allowed to call the proxy from a browser.
 # Edit this before deploying: add your deployed app's origin.
 ALLOWED_ORIGINS = "http://localhost:5173"
-# MODEL = "claude-haiku-5-5"   # much cheaper than the default claude-opus-5-5
+# MODEL = "claude-sonnet-5-5"  # default is claude-haiku-5-5; a bigger model costs more per task
 # DAILY_LIMIT = "150"          # requests per invite code per UTC day
 
 # Required (the Worker refuses requests without it): per-code daily counters and
