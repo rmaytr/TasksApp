@@ -1,0 +1,152 @@
+/* ---------- Due pill ---------- */
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  min-height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  background: var(--sunken);
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.due svg {
+  opacity: 0.75;
+}
+
+.due__prefix {
+  font-weight: 450;
+}
+
+.due--soon {
+  background: var(--sun-soft);
+  color: var(--sun-ink);
+}
+
+.due--week {
+  background: var(--primary-soft);
+  color: var(--primary-soft-ink);
+}
+
+.due--overdue {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ---------- Date picker ---------- */
+.picker {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+
+.picker__quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.picker__q {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font-weight: 560;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.picker__q small {
+  color: var(--ink-3);
+  font-size: var(--step--2);
+  font-weight: 450;
+}
+
+.picker__q:hover {
+  border-color: var(--line-strong);
+}
+
+.picker__q[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-soft-ink);
+}
+
+.picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.picker__month {
+  font-weight: 600;
+}
+
+.picker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  text-align: center;
+}
+
+.picker__wd {
+  padding-bottom: 4px;
+  color: var(--ink-3);
+  font-size: var(--step--2);
+  font-weight: 600;
+}
+
+.picker__day {
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--step--1);
+  transition: background 0.12s ease;
+}
+
+.picker__day:hover {
+  background: var(--sunken);
+}
+
+.picker__day.is-past {
+  color: var(--ink-3);
+}
+
+.picker__day.is-today {
+  box-shadow: inset 0 0 0 1.5px var(--primary);
+  font-weight: 650;
+}
+
+.picker__day[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 650;
+}
+
+.picker__none {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.picker__none-label {
+  margin-right: 4px;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}

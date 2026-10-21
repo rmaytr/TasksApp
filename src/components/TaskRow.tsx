@@ -1,11 +1,11 @@
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import { daysBetween, formatDue, todayISO } from '../lib/dates'
 import { extractLinks } from '../lib/links'
 import { areaStyle, useAreaMap, useReducedMotion } from '../hooks'
-import { effectiveHorizon, isStale } from '../model/derive'
-import { HORIZON_LABEL, priorityOf, type Task } from '../model/types'
+import { isStale } from '../model/derive'
+import { priorityOf, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
+import { DuePill } from './DueDate'
 import { Icon } from './Icon'
 import { StepList } from './StepList'
 import './TaskRow.css'
@@ -13,28 +13,23 @@ import './TaskRow.css'
 interface TaskRowProps {
   task: Task
   now: Date
-  /** Show the ring ("This week") when the list isn't already grouped by it. */
-  showWhen?: boolean
-  /** Show the area name (lists that mix areas). */
-  showArea?: boolean
   /** Name of an open task this one waits for. */
   blockedBy?: string
 }
 
+/** A flag for high priority; normal and low stay unmarked to keep rows quiet. */
 export function PriorityMark({ task }: { task: Pick<Task, 'high' | 'low'> }) {
-  const level = priorityOf(task)
+  if (priorityOf(task) !== 'high') return null
   return (
-    <span className="prio" data-level={level} title={`${level[0].toUpperCase()}${level.slice(1)} priority`}>
-      <i />
-      <i />
-      <i />
-      <span className="visually-hidden">{level} priority</span>
+    <span className="trow__flag" title="High priority">
+      <Icon name="flag" size={15} />
+      <span className="visually-hidden">High priority</span>
     </span>
   )
 }
 
 /** One task in a list: check it off, open it, peek at its steps. Calm by default. */
-export function TaskRow({ task, now, showWhen = false, showArea = false, blockedBy }: TaskRowProps) {
+export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
   const [open, setOpen] = useState(false)
   const setDone = useStore((s) => s.setDone)
   const select = useStore((s) => s.select)
@@ -44,8 +39,6 @@ export function TaskRow({ task, now, showWhen = false, showArea = false, blocked
   const reduce = useReducedMotion()
   const doneSteps = task.steps.filter((s) => s.done).length
   const link = extractLinks(`${task.title}\n${task.notes}`)[0]
-  const soon = task.due ? daysBetween(todayISO(now), task.due) <= 1 : false
-  const priority = priorityOf(task)
 
   return (
     <motion.li
@@ -67,29 +60,29 @@ export function TaskRow({ task, now, showWhen = false, showArea = false, blocked
         />
         <button type="button" className="trow__body" data-task-id={task.id} onClick={() => select(task.id)}>
           <span className="trow__title">{task.title}</span>
-          <span className="trow__meta">
-            {showArea && area && (
-              <span className="trow__area">
-                <span className="dot" /> {area.name}
-              </span>
-            )}
-            {sorting && (
-              <span className="trow__sorting" role="status">
-                <Icon name="sparkle" size={12} /> Sorting…
-              </span>
-            )}
-            {blockedBy && (
-              <span className="trow__blocked">
-                <Icon name="clock" size={12} /> After “{blockedBy}”
-              </span>
-            )}
-            {task.waiting && <span className="trow__waiting">Waiting on {task.waiting}</span>}
-            {showWhen && !task.due && <span>{HORIZON_LABEL[effectiveHorizon(task, now)]}</span>}
-          </span>
+          {(sorting || blockedBy || task.waiting) && (
+            <span className="trow__meta">
+              {sorting && (
+                <span className="trow__sorting" role="status">
+                  <Icon name="sparkle" size={12} /> Sorting…
+                </span>
+              )}
+              {blockedBy && (
+                <span className="trow__blocked" title={`Starts after “${blockedBy}”`}>
+                  <Icon name="link" size={12} /> after {blockedBy}
+                </span>
+              )}
+              {task.waiting && (
+                <span className="trow__waiting" title={`Waiting on ${task.waiting}`}>
+                  <Icon name="hourglass" size={12} /> {task.waiting}
+                </span>
+              )}
+            </span>
+          )}
         </button>
         <span className="trow__side">
-          {priority !== 'normal' && <PriorityMark task={task} />}
-          {task.due && <span className={`tag num${soon ? ' tag--soon' : ''}`}>{formatDue(task.due, now)}</span>}
+          <PriorityMark task={task} />
+          {task.due && <DuePill due={task.due} now={now} />}
           {link && (
             <a className="trow__link" href={link.url} target="_blank" rel="noopener noreferrer" title={link.url}>
               <Icon name="link" size={14} />

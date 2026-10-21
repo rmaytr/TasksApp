@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addDays,
   daysBetween,
+  dueTone,
   formatDue,
   fromISODate,
   horizonForDue,
@@ -366,15 +367,24 @@ describe('formatDue', () => {
     ['2026-10-21', 'Today'],
     ['2026-10-22', 'Tomorrow'],
     ['2026-10-20', 'Yesterday'],
-    ['2026-10-19', '2 days ago'],
-    ['2026-10-18', '3 days ago'],
-    ['2026-10-23', 'Fri'],
-    ['2026-10-27', 'Tue'],
-    ['2026-10-28', 'Oct 28'],
-    ['2026-11-03', 'Nov 3'],
-    ['2027-11-03', 'Nov 3, 2027'],
-    ['2026-09-11', 'Sep 11'],
+    ['2026-10-19', 'Mon, Oct 19'],
+    ['2026-10-23', 'Fri, Oct 23'],
+    ['2026-10-27', 'Tue, Oct 27'],
+    ['2026-11-03', 'Tue, Nov 3'],
+    ['2027-11-03', 'Wed, Nov 3, 2027'],
   ])('%s -> %s', (due, label) => {
     expect(formatDue(due, NOW)).toBe(label)
+  })
+})
+
+describe('dueTone', () => {
+  it.each([
+    ['2026-10-20', 'overdue'],
+    ['2026-10-21', 'soon'],
+    ['2026-10-22', 'soon'],
+    ['2026-10-27', 'week'],
+    ['2026-10-28', 'later'],
+  ] as const)('%s -> %s', (due, tone) => {
+    expect(dueTone(due, NOW)).toBe(tone)
   })
 })

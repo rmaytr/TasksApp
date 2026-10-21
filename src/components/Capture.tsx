@@ -1,8 +1,8 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
 import { previewCapture, useAddTask } from '../assist/useAddTask'
 import { areaStyle, useAreaMap, useMediaQuery, useNow } from '../hooks'
-import { formatDue } from '../lib/dates'
 import { useStore } from '../store/useStore'
+import { DuePill } from './DueDate'
 import { Icon } from './Icon'
 import './Capture.css'
 
@@ -91,7 +91,7 @@ export function Capture({ variant, areaId = null, onAdded, autoFocus = false }: 
               </select>
               <Icon name="chevron" size={12} />
             </label>
-            {preview.due && <span className="tag tag--soon num">{formatDue(preview.due, now)}</span>}
+            {preview.due && <DuePill due={preview.due} now={now} />}
             {preview.high && <span className="tag tag--high">High priority</span>}
             {ai !== 'off' && (
               <span className="capture__ai">

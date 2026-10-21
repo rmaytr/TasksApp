@@ -254,17 +254,26 @@ export function nearerHorizon(a: Horizon, b: Horizon | null): Horizon {
 
 /* ---------------------------------- display --------------------------------- */
 
-const MAX_DAYS_AGO_LABEL = 30
-
-/** "Today", "Tomorrow", "Yesterday", "3 days ago", "Fri", "Nov 3", "Nov 3, 2027". */
+/**
+ * "Today", "Tomorrow", "Yesterday", otherwise weekday plus date so it's never ambiguous:
+ * "Fri, Oct 23", "Mon, Oct 19", "Wed, Nov 3, 2027".
+ */
 export function formatDue(due: string, now: Date): string {
   const days = daysBetween(todayISO(now), due)
   if (days === 0) return 'Today'
   if (days === 1) return 'Tomorrow'
   if (days === -1) return 'Yesterday'
-  if (days < 0 && days >= -MAX_DAYS_AGO_LABEL) return `${-days} days ago`
   const date = fromISODate(due)
-  if (days >= 2 && days <= 6) return WEEKDAY_SHORT[date.getDay()] ?? due
-  const label = `${MONTH_SHORT[date.getMonth()] ?? ''} ${date.getDate()}`
+  const label = `${WEEKDAY_SHORT[date.getDay()] ?? ''}, ${MONTH_SHORT[date.getMonth()] ?? ''} ${date.getDate()}`
   return date.getFullYear() === now.getFullYear() ? label : `${label}, ${date.getFullYear()}`
+}
+
+export type DueTone = 'overdue' | 'soon' | 'week' | 'later'
+
+/** How close a deadline is, for color: past, today/tomorrow, within a week, further out. */
+export function dueTone(due: string, now: Date): DueTone {
+  const days = daysBetween(todayISO(now), due)
+  if (days < 0) return 'overdue'
+  if (days <= 1) return 'soon'
+  return days <= 6 ? 'week' : 'later'
 }

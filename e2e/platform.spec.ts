@@ -48,7 +48,7 @@ test.describe('phone layout', () => {
     await expect(welcome(page)).toBeHidden()
     expect(await scrollWidth()).toBeLessThanOrEqual(375)
 
-    for (const view of ['Tasks', 'Focus', 'Today']) {
+    for (const view of ['Tasks', 'Lock in', 'Today']) {
       await tabs.getByRole('button', { name: view }).click()
       expect(await scrollWidth(), `${view} view`).toBeLessThanOrEqual(375)
     }

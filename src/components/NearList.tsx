@@ -40,7 +40,7 @@ export function NearList() {
         <ul className="trows">
           <AnimatePresence initial={false}>
             {near.map((t) => (
-              <TaskRow key={t.id} task={t} now={now} showWhen showArea />
+              <TaskRow key={t.id} task={t} now={now} />
             ))}
           </AnimatePresence>
         </ul>

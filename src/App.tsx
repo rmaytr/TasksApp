@@ -1,7 +1,7 @@
 import { useCloud, useHashView, useShortcuts, useStorageErrors, useTheme } from './appEffects'
 import { useReminders } from './reminders/useReminders'
 import { AccountDialog } from './components/AccountDialog'
-import { FocusView } from './components/FocusView'
+import { LockInView } from './components/LockInView'
 import { HomeView } from './components/HomeView'
 import { ImportDialog } from './components/ImportDialog'
 import { BottomNav, Sidebar } from './components/Navigation'
@@ -49,7 +49,7 @@ export default function App() {
         <div className="stage" data-view={view}>
           {view === 'home' && <HomeView />}
           {view === 'tasks' && <TasksView />}
-          {view === 'focus' && <FocusView />}
+          {view === 'focus' && <LockInView />}
           {view === 'reset' && <ResetView />}
         </div>
       </main>

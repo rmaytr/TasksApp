@@ -29,12 +29,12 @@ right now. Cairn is designed around a few ADHD-friendly rules:
 ### Views
 
 - **Today.** Capture, Up next, today and this week.
-- **All tasks.** List (search, priority filter, waiting, show done), **Map** (a mind map of areas
-  and tasks; an outline on phones) or **Radar** (rings from Today to Someday, slices per area; drag a
-  dot closer to do it sooner).
-- **Focus.** One task and its next step, a 25-minute timer and an “I'll do it…” prompt. Naming when
-  and where you'll do something
-  [roughly doubles follow-through](https://cancercontrol.cancer.gov/brp/research/constructs/implementation-intentions).
+- **All tasks.** List (search, sort by smart order, due date or priority, reverse, show done),
+  **Map** (a mind map of areas and tasks; an outline on phones) or **Radar** (rings from Today to
+  Someday, slices per area; drag a dot closer to do it sooner).
+- **Lock in.** For when everything feels like too much: Cairn (with the assistant, if it's on) picks
+  one task and shows only its next small step, says why it's first, and can break a big task into
+  smaller steps. Each thing you finish adds a stone to your cairn.
 - **Weekly reset.** A three-minute sweep: pull closer, keep, push out, done or drop, one card at a time.
 
 Also: High / Normal / Low priority, steps, repeating tasks, links in notes become chips, `Ctrl K`
@@ -107,7 +107,7 @@ ever stores ciphertext. Details: [docs/SYNC.md](docs/SYNC.md), [privacy policy](
 | --- | --- |
 | `/` or `n` | Add a task |
 | `Ctrl K` | Find any task |
-| `1` `2` `3` | Today, All tasks, Focus |
+| `1` `2` `3` | Today, All tasks, Lock in |
 | `i` | Import |
 | `z` | Undo the last change |
 | `Esc` | Close the open task or dialog |

@@ -11,7 +11,7 @@ import './Navigation.css'
 const NAV: readonly { view: View; label: string; icon: IconName; key: string }[] = [
   { view: 'home', label: 'Today', icon: 'home', key: '1' },
   { view: 'tasks', label: 'All tasks', icon: 'list', key: '2' },
-  { view: 'focus', label: 'Focus', icon: 'focus', key: '3' },
+  { view: 'focus', label: 'Lock in', icon: 'target', key: '3' },
 ]
 
 function useOpenCounts(): Map<string, number> {
@@ -174,7 +174,7 @@ export function BottomNav() {
         <button type="button" className="tabs__add" onClick={() => setQuickAddOpen(true)} aria-label="New task">
           <Icon name="plus" size={26} />
         </button>
-        {tab({ view: 'focus', label: 'Focus', icon: 'focus' })}
+        {tab({ view: 'focus', label: 'Lock in', icon: 'target' })}
         <button type="button" className="tabs__item" onClick={() => setMoreOpen(true)} aria-haspopup="dialog">
           <Icon name="menu" size={22} />
           <span>More</span>

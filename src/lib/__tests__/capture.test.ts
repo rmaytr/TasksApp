@@ -120,11 +120,11 @@ describe('parseCapture', () => {
   describe('natural dates', () => {
     it.each([
       ['Call mom today', '2026-10-21', 'Today', 'Call mom'],
-      ['Pay rent fri', '2026-10-23', 'Fri', 'Pay rent'],
-      ['Hand in essay next week', '2026-10-26', 'Mon', 'Hand in essay'],
-      ['Renew visa nov 3', '2026-11-03', 'Nov 3', 'Renew visa'],
-      ['Renew visa 11/3', '2026-11-03', 'Nov 3', 'Renew visa'],
-      ['Finish in 3 days', '2026-10-24', 'Sat', 'Finish'],
+      ['Pay rent fri', '2026-10-23', 'Fri, Oct 23', 'Pay rent'],
+      ['Hand in essay next week', '2026-10-26', 'Mon, Oct 26', 'Hand in essay'],
+      ['Renew visa nov 3', '2026-11-03', 'Tue, Nov 3', 'Renew visa'],
+      ['Renew visa 11/3', '2026-11-03', 'Tue, Nov 3', 'Renew visa'],
+      ['Finish in 3 days', '2026-10-24', 'Sat, Oct 24', 'Finish'],
       ['tomorrow Email dean', '2026-10-22', 'Tomorrow', 'Email dean'],
       ['Email the dean tomorrow about housing', '2026-10-22', 'Tomorrow', 'Email the dean about housing'],
     ])('%j', (input, due, label, title) => {

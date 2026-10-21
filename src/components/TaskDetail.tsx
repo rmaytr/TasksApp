@@ -1,38 +1,20 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { areaStyle, useAreaMap, useMediaQuery, useNow } from '../hooks'
-import { effectiveHorizon } from '../model/derive'
-import {
-  EFFORT_LABEL,
-  HORIZONS,
-  HORIZON_LABEL,
-  PRIORITY_LABEL,
-  priorityOf,
-  type Effort,
-  type Horizon,
-  type Priority,
-  type Task,
-} from '../model/types'
+import { formatDue } from '../lib/dates'
+import { REPEAT_LABEL } from '../model/repeat'
+import { HORIZON_LABEL, PRIORITY_LABEL, priorityOf, type Priority, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Icon } from './Icon'
-import { AfterField, DueField, LinkChips, RepeatField } from './DetailFields'
+import { AfterField, LinkChips, RepeatField } from './DetailFields'
+import { DatePicker } from './DueDate'
 import { StepList } from './StepList'
 import './TaskDetail.css'
 
-const EFFORTS: readonly Effort[] = ['s', 'm', 'l']
 const PRIORITIES: readonly Priority[] = ['high', 'normal', 'low']
 
-/** Open "More options" automatically when any of those fields already has a value. */
-const hasExtras = (t: Task): boolean =>
-  Boolean(t.plan || t.waiting || t.notes || (t.repeat && t.repeat !== 'none') || t.effort !== 'm')
-
-const HORIZON_SHORT: Record<Horizon, string> = {
-  today: 'Today',
-  week: 'Week',
-  month: 'Month',
-  later: 'Later',
-  someday: 'Someday',
-}
+/** Which inline editor is open under the chip row. */
+type Editor = 'date' | 'priority' | 'repeat' | null
 
 export function TaskDetail() {
   const task = useStore((s) => s.tasks.find((t) => t.id === s.selectedId) ?? null)
@@ -64,6 +46,10 @@ export function TaskDetail() {
   )
 }
 
+/**
+ * Title, one row of chips (date, priority), steps and a note. Repeat, "waiting on" and
+ * "after another task" stay out of sight until the task uses them or the user adds one.
+ */
 function DetailBody({ task }: { task: Task }) {
   const areas = useStore((s) => s.areas)
   const updateTask = useStore((s) => s.updateTask)
@@ -76,8 +62,9 @@ function DetailBody({ task }: { task: Task }) {
   const now = useNow()
   const closeRef = useRef<HTMLButtonElement>(null)
   const [title, setTitle] = useState(task.title)
-  // Decided once per task (the body is keyed by id), so clearing a field doesn't snap the section shut.
-  const [moreOpen, setMoreOpen] = useState(() => hasExtras(task))
+  const [editor, setEditor] = useState<Editor>(null)
+  const [showWaiting, setShowWaiting] = useState(false)
+  const [showAfter, setShowAfter] = useState(false)
   // Re-sync the draft when the stored title changes underneath us (e.g. Undo).
   const [syncedTitle, setSyncedTitle] = useState(task.title)
   if (syncedTitle !== task.title) {
@@ -104,12 +91,16 @@ function DetailBody({ task }: { task: Task }) {
     // Runs once per opened task; DetailBody is keyed by task id.
   }, [task.id])
 
-  const effective = effectiveHorizon(task, now)
   const commitTitle = (): void => {
     const clean = title.trim()
     if (clean && clean !== task.title) updateTask(task.id, { title: clean.slice(0, 300) })
     else setTitle(task.title)
   }
+  const toggle = (next: Editor): void => setEditor(editor === next ? null : next)
+  const priority = priorityOf(task)
+  const repeats = Boolean(task.repeat && task.repeat !== 'none')
+  const waiting = showWaiting || task.waiting !== null
+  const after = showAfter || (task.after?.length ?? 0) > 0
 
   return (
     <div className="detail__inner" style={areaStyle(area)}>
@@ -136,7 +127,7 @@ function DetailBody({ task }: { task: Task }) {
       <textarea
         className="detail__title"
         value={title}
-        rows={2}
+        rows={1}
         aria-label="Title"
         onChange={(e) => setTitle(e.target.value.replace(/\n/g, ' '))}
         onBlur={commitTitle}
@@ -150,110 +141,128 @@ function DetailBody({ task }: { task: Task }) {
 
       <LinkChips task={task} />
 
-      <div className="detail__group">
-        <span className="detail__label">When</span>
-        <div className="detail__chips" role="group" aria-label="Ring">
-          {HORIZONS.map((h) => (
-            <button
-              key={h}
-              type="button"
-              className="chip"
-              aria-pressed={effective === h}
-              aria-label={HORIZON_LABEL[h]}
-              onClick={() => moveTask(task.id, { horizon: h }, `Moved to ${HORIZON_LABEL[h]}`)}
-            >
-              {HORIZON_SHORT[h]}
-            </button>
-          ))}
-        </div>
-        {effective !== task.horizon && task.due && (
-          <p className="detail__note">The due date keeps it in {HORIZON_LABEL[effective]}.</p>
+      <div className="detail__chips" role="group" aria-label="Date and priority">
+        <button
+          type="button"
+          className={`dchip${task.due ? ' dchip--set' : ''}`}
+          aria-expanded={editor === 'date'}
+          aria-label={task.due ? `Due ${formatDue(task.due, now)}. Change date` : 'Add a date'}
+          onClick={() => toggle('date')}
+        >
+          <Icon name="calendar" size={16} />
+          {task.due ? formatDue(task.due, now) : <span className="dchip__muted">{HORIZON_LABEL[task.horizon]}</span>}
+        </button>
+        <button
+          type="button"
+          className={`dchip dchip--prio-${priority}`}
+          aria-expanded={editor === 'priority'}
+          aria-label={`Priority: ${PRIORITY_LABEL[priority]}`}
+          onClick={() => toggle('priority')}
+        >
+          <Icon name="flag" size={16} />
+          {priority === 'normal' ? <span className="dchip__muted">Priority</span> : PRIORITY_LABEL[priority]}
+        </button>
+        {repeats && (
+          <button type="button" className="dchip dchip--set" aria-expanded={editor === 'repeat'} onClick={() => toggle('repeat')}>
+            <Icon name="repeat" size={16} />
+            {REPEAT_LABEL[task.repeat ?? 'none']}
+          </button>
         )}
       </div>
 
-      <DueField task={task} now={now} />
-
-      <div className="detail__group">
-        <span className="detail__label">Priority</span>
-        <div className="seg detail__prio" role="group" aria-label="Priority">
+      {editor === 'date' && (
+        <DatePicker
+          due={task.due}
+          horizon={task.horizon}
+          now={now}
+          onPick={(due) => {
+            updateTask(task.id, { due })
+            setEditor(null)
+          }}
+          onNoDate={(horizon) => {
+            updateTask(task.id, { due: null, horizon })
+            setEditor(null)
+          }}
+        />
+      )}
+      {editor === 'priority' && (
+        <div className="detail__prio" role="group" aria-label="Priority">
           {PRIORITIES.map((p) => (
             <button
               key={p}
               type="button"
-              aria-pressed={priorityOf(task) === p}
-              onClick={() => updateTask(task.id, { high: p === 'high', low: p === 'low' })}
+              className={`detail__prio-opt detail__prio-opt--${p}`}
+              aria-pressed={priority === p}
+              onClick={() => {
+                updateTask(task.id, { high: p === 'high', low: p === 'low' })
+                setEditor(null)
+              }}
             >
-              <span className="prio" data-level={p}>
-                <i />
-                <i />
-                <i />
-              </span>
-              {PRIORITY_LABEL[p]}
+              <Icon name="flag" size={16} /> {PRIORITY_LABEL[p]}
             </button>
           ))}
         </div>
-      </div>
-
-      <section className="detail__group" aria-labelledby="steps-h">
-        <h3 id="steps-h" className="detail__label">
-          Steps
-        </h3>
-        <StepList task={task} />
-      </section>
-
-      <AfterField task={task} />
-
-      <details className="detail__more" open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
-        <summary>
-          <Icon name="chevron" size={14} /> More options
-        </summary>
-        <div className="detail__more-body">
-          <div className="detail__row">
-            <RepeatField task={task} />
-            <div className="seg seg--small" role="group" aria-label="Size">
-              {EFFORTS.map((e) => (
-                <button key={e} type="button" aria-pressed={task.effort === e} onClick={() => updateTask(task.id, { effort: e })}>
-                  {EFFORT_LABEL[e]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="detail__group">
-            <span className="detail__label">I’ll do it…</span>
-            <input
-              className="field"
-              value={task.plan ?? ''}
-              placeholder="e.g. Tuesday after class, at the library"
-              onChange={(e) => updateTask(task.id, { plan: e.target.value || null })}
-              maxLength={200}
-            />
-          </label>
-          <label className="detail__group">
-            <span className="detail__label">Waiting on</span>
-            <input
-              className="field"
-              value={task.waiting ?? ''}
-              placeholder="e.g. rec letter from Dr. Lee"
-              onChange={(e) => updateTask(task.id, { waiting: e.target.value || null })}
-              maxLength={200}
-            />
-          </label>
-          <label className="detail__group">
-            <span className="detail__label">Notes</span>
-            <textarea
-              className="field"
-              rows={4}
-              value={task.notes}
-              placeholder="Details, links, anything"
-              onChange={(e) => updateTask(task.id, { notes: e.target.value.slice(0, 5000) })}
-            />
-          </label>
-        </div>
-      </details>
-
-      {task.spentMinutes > 0 && (
-        <p className="detail__meta num">{Math.round(task.spentMinutes)} min spent in Focus</p>
       )}
+      {editor === 'repeat' && <RepeatField task={task} />}
+
+      <StepList task={task} />
+
+      <textarea
+        className="detail__note"
+        rows={2}
+        value={task.notes}
+        placeholder="Add a note"
+        aria-label="Note"
+        onChange={(e) => updateTask(task.id, { notes: e.target.value.slice(0, 5000) })}
+      />
+
+      {waiting && (
+        <div className="detail__extra">
+          <Icon name="hourglass" size={16} />
+          <input
+            className="detail__extra-input"
+            value={task.waiting ?? ''}
+            placeholder="Waiting on… (e.g. a reply from Dr. Lee)"
+            aria-label="Waiting on"
+            autoFocus={showWaiting && task.waiting === null}
+            onChange={(e) => updateTask(task.id, { waiting: e.target.value || null })}
+            maxLength={200}
+          />
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Not waiting on anything"
+            onClick={() => {
+              updateTask(task.id, { waiting: null })
+              setShowWaiting(false)
+            }}
+          >
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+      )}
+      {after && <AfterField task={task} onEmpty={() => setShowAfter(false)} />}
+
+      {!(repeats && waiting && after) && (
+        <div className="detail__add" role="group" aria-label="Add">
+          {!repeats && editor !== 'repeat' && (
+            <button type="button" className="detail__add-btn" onClick={() => setEditor('repeat')}>
+              <Icon name="repeat" size={15} /> Repeat
+            </button>
+          )}
+          {!waiting && (
+            <button type="button" className="detail__add-btn" onClick={() => setShowWaiting(true)}>
+              <Icon name="hourglass" size={15} /> Waiting on someone
+            </button>
+          )}
+          {!after && (
+            <button type="button" className="detail__add-btn" onClick={() => setShowAfter(true)}>
+              <Icon name="link" size={15} /> After another task
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="detail__actions">
         <button
           type="button"
@@ -263,15 +272,22 @@ function DetailBody({ task }: { task: Task }) {
             if (!task.done) select(null)
           }}
         >
-          <Icon name="check" size={18} /> {task.done ? 'Mark not done' : 'Mark done'}
+          <Icon name="check" size={18} /> {task.done ? 'Not done' : 'Done'}
         </button>
         {!task.done && (
           <button type="button" className="btn" onClick={() => startFocus(task.id)}>
-            <Icon name="focus" size={18} /> Focus
+            <Icon name="target" size={18} /> Lock in
           </button>
         )}
-        <button type="button" className="btn btn--ghost btn--danger" onClick={() => deleteTask(task.id)}>
-          <Icon name="trash" size={18} /> Delete
+        <span className="detail__spacer" />
+        <button
+          type="button"
+          className="icon-btn detail__delete"
+          onClick={() => deleteTask(task.id)}
+          aria-label="Delete task"
+          title="Delete task"
+        >
+          <Icon name="trash" size={19} />
         </button>
       </div>
     </div>

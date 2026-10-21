@@ -116,6 +116,12 @@
   background: var(--c);
 }
 
+.next__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .next__title {
   padding: 0;
   border: 0;

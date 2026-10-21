@@ -11,11 +11,27 @@ import { Icon } from './Icon'
 import { TaskRow } from './TaskRow'
 import './ListView.css'
 
+export type ListSort = 'smart' | 'due' | 'priority'
+
 export interface ListFilters {
-  priority: Priority | 'all'
-  waiting: boolean
+  sort: ListSort
+  /** Flip the order: e.g. low priority first, or latest deadline first. */
+  reverse: boolean
   showDone: boolean
   query: string
+}
+
+const PRIORITY_RANK: Record<Priority, number> = { high: 0, normal: 1, low: 2 }
+
+/** Re-sorts the planner's order; ties keep the planner's order (stable sort). */
+function sortItems<T extends { task: Task }>(items: T[], sort: ListSort, reverse: boolean): T[] {
+  const sorted =
+    sort === 'due'
+      ? [...items].sort((a, b) => (a.task.due ?? '9999').localeCompare(b.task.due ?? '9999'))
+      : sort === 'priority'
+        ? [...items].sort((a, b) => PRIORITY_RANK[priorityOf(a.task)] - PRIORITY_RANK[priorityOf(b.task)])
+        : items
+  return reverse ? [...sorted].reverse() : sorted
 }
 
 interface Group {
@@ -50,10 +66,12 @@ export function ListView({ areaId, filters }: { areaId: string | null; filters: 
   const groups = useMemo((): Group[] => {
     const keep = (t: Task): boolean =>
       (areaId ? t.areaId === areaId : !hidden.includes(t.areaId)) &&
-      matches(t, filters.query) &&
-      (filters.priority === 'all' || priorityOf(t) === filters.priority) &&
-      (!filters.waiting || Boolean(t.waiting))
-    const ordered = orderTasks(tasks.filter(keep), now).map((p) => ({ task: p.task, blockedBy: p.blockedBy[0]?.title }))
+      matches(t, filters.query)
+    const ordered = sortItems(
+      orderTasks(tasks.filter(keep), now).map((p) => ({ task: p.task, blockedBy: p.blockedBy[0]?.title })),
+      filters.sort,
+      filters.reverse,
+    )
     const done = filters.showDone ? tasks.filter((t) => t.done && keep(t)).map((task) => ({ task })) : []
     const all = [...ordered, ...done]
     if (areaId) {
@@ -71,7 +89,7 @@ export function ListView({ areaId, filters }: { areaId: string | null; filters: 
       .map((a) => ({ key: a.id, title: a.name, area: a, items: all.filter((i) => i.task.areaId === a.id) }))
   }, [tasks, areas, hidden, areaId, filters, now])
 
-  const searching = filters.query.length > 0 || filters.priority !== 'all' || filters.waiting
+  const searching = filters.query.length > 0
   const total = groups.reduce((n, g) => n + g.items.length, 0)
 
   return (
@@ -88,7 +106,7 @@ export function ListView({ areaId, filters }: { areaId: string | null; filters: 
               <ul className="trows">
                 <AnimatePresence initial={false}>
                   {group.items.map(({ task, blockedBy }) => (
-                    <TaskRow key={task.id} task={task} now={now} showWhen={!areaId} blockedBy={blockedBy} />
+                    <TaskRow key={task.id} task={task} now={now} blockedBy={blockedBy} />
                   ))}
                 </AnimatePresence>
               </ul>
@@ -105,7 +123,7 @@ export function ListView({ areaId, filters }: { areaId: string | null; filters: 
         </button>
       )}
       <p className="list__empty" role="status">
-        {searching && total === 0 ? 'Nothing matches these filters.' : ''}
+        {searching && total === 0 ? 'No tasks match that search.' : ''}
       </p>
     </div>
   )

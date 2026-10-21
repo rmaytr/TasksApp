@@ -54,7 +54,7 @@ test.describe('capture', () => {
     await input.pressSequentially('Email mentee #orgs tomorrow !')
     const form = page.getByRole('form', { name: 'Add a task' }).first()
     await expect(form.locator('.capture__area select')).toHaveValue('orgs')
-    await expect(form.locator('.tag--soon')).toHaveText('Tomorrow')
+    await expect(form.locator('.due')).toHaveText('Tomorrow')
     await expect(form.locator('.tag--high')).toHaveText('High priority')
 
     await input.press('Enter')
@@ -64,8 +64,8 @@ test.describe('capture', () => {
     await sideButton(page, /^Orgs/).click()
     const row = page.locator('.trow').filter({ has: taskButton(page, 'Email mentee') })
     await expect(row).toBeVisible()
-    await expect(row.locator('.tag')).toHaveText('Tomorrow')
-    await expect(row.locator('.prio')).toHaveAttribute('data-level', 'high')
+    await expect(row.locator('.due')).toHaveText('Tomorrow')
+    await expect(row.locator('.trow__flag')).toBeVisible()
   })
 
   test('the area is guessed from the words alone', async ({ page }) => {
@@ -168,15 +168,16 @@ test.describe('list', () => {
     await expect(checkboxes).toHaveCount(before)
   })
 
-  test('the priority filter shows only that priority', async ({ page }) => {
+  test('sorting by priority puts flagged tasks first in each area, and reverse flips it', async ({ page }) => {
     await loadSample(page)
     await page.keyboard.press('2')
-    const filters = page.getByRole('group', { name: 'Priority' })
-    await filters.getByRole('button', { name: 'High' }).click()
-    const rows = page.locator('.trow')
-    await expect(rows.first()).toBeVisible()
-    // Rows that fade out are still in the DOM for a moment, so let the count settle.
-    await expect(rows.filter({ hasNot: page.locator('.prio[data-level="high"]') })).toHaveCount(0)
+    await page.getByLabel('Sort by').selectOption('priority')
+    const career = page.locator('section.list__group').filter({ has: page.getByRole('heading', { name: /^Career/ }) })
+    const rows = career.locator('.trow')
+    await expect(rows.first().locator('.trow__flag')).toBeVisible()
+    await page.getByRole('button', { name: 'Reverse order' }).click()
+    await expect(rows.last().locator('.trow__flag')).toBeVisible()
+    await expect(rows.first().locator('.trow__flag')).toHaveCount(0)
   })
 })
 
@@ -194,17 +195,19 @@ test.describe('task detail', () => {
     await step.press('Enter')
     await expect(detail.getByLabel('Step', { exact: true })).toHaveValue('Book flights')
 
-    const today = detail.getByRole('group', { name: 'Ring' }).getByRole('button', { name: 'Today', exact: true })
-    await today.click()
-    await expect(today).toHaveAttribute('aria-pressed', 'true')
-    const high = detail.getByRole('group', { name: 'Priority' }).getByRole('button', { name: /High/ })
-    await high.click()
-    await expect(high).toHaveAttribute('aria-pressed', 'true')
+    await detail.getByRole('button', { name: 'Add a date' }).click()
+    await detail.getByRole('group', { name: 'Quick dates' }).getByRole('button', { name: /^Today/ }).click()
+    await expect(detail.getByRole('button', { name: /^Due Today/ })).toBeVisible()
+    await detail.getByRole('button', { name: /^Priority/ }).click()
+    await detail.getByRole('group', { name: 'Priority' }).getByRole('button', { name: /High/ }).click()
+    await expect(detail.getByRole('button', { name: 'Priority: High' })).toBeVisible()
+    // Rare options stay hidden until asked for.
+    await expect(detail.getByLabel('Waiting on')).toHaveCount(0)
 
     await detail.getByRole('button', { name: 'Close details' }).click()
     await page.keyboard.press('1')
     await expect(page.getByRole('heading', { name: 'Up next' })).toBeVisible()
-    await expect(page.locator('.home').getByText('Plan the trip')).toBeVisible()
+    await expect(page.locator('.home').getByRole('button', { name: 'Plan the trip', exact: true })).toBeVisible()
   })
 })
 
@@ -218,19 +221,41 @@ test.describe('reminders', () => {
   })
 })
 
-test.describe('focus', () => {
-  test('Done advances to the next task', async ({ page }) => {
+test.describe('lock in', () => {
+  test('picks one thing, and Done moves on and adds a stone', async ({ page }) => {
     await loadSample(page)
     await page.keyboard.press('3')
-    const title = page.locator('#focus-title')
-    await expect(title).toBeVisible()
-    const first = (await title.textContent()) ?? ''
+    await expect(sidebar(page).getByRole('button', { name: 'Lock in' })).toHaveAttribute('aria-current', 'page')
+    await page.locator('.lockin__go').click()
+    const step = page.locator('#now-step')
+    await expect(step).toBeVisible()
+    const first = (await step.textContent()) ?? ''
     expect(first).not.toBe('')
 
     await page.getByRole('button', { name: 'Done', exact: true }).click()
 
-    await expect(title).toBeVisible()
-    await expect(title).not.toHaveText(first)
-    await expect(sidebar(page).getByRole('button', { name: 'Focus' })).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByText('1 done')).toBeVisible()
+    await expect(page.getByRole('img', { name: 'A cairn of 1 stone' })).toBeVisible()
+    await expect(step).not.toHaveText(first)
+  })
+
+  test('Lock in from a task starts with that task', async ({ page }) => {
+    await loadSample(page)
+    await page.keyboard.press('2')
+    await taskButton(page, 'Call home').click()
+    await page.getByRole('complementary', { name: 'Task details' }).getByRole('button', { name: 'Lock in' }).click()
+    await expect(page.locator('#now-step')).toHaveText('Call home')
+  })
+
+  test('without the assistant, Make it smaller asks for a first step', async ({ page }) => {
+    await loadSample(page)
+    await page.keyboard.press('2')
+    await taskButton(page, 'Call home').click()
+    await page.getByRole('complementary', { name: 'Task details' }).getByRole('button', { name: 'Lock in' }).click()
+    await page.getByRole('button', { name: 'Make it smaller' }).click()
+    const input = page.getByLabel('First step')
+    await input.fill('Find a quiet spot')
+    await input.press('Enter')
+    await expect(page.locator('#now-step')).toHaveText('Find a quiet spot')
   })
 })

@@ -8,7 +8,7 @@ import { currentHash, useStore, type View } from './store/useStore'
 export const VIEW_TITLE: Record<View, string> = {
   home: 'Today',
   tasks: 'Tasks',
-  focus: 'Focus',
+  focus: 'Lock in',
   reset: 'Weekly reset',
 }
 
@@ -22,7 +22,7 @@ export function useTheme(): void {
   useEffect(() => {
     document.documentElement.dataset.theme = resolved
     const meta = document.querySelector('meta[name="theme-color"]')
-    meta?.setAttribute('content', resolved === 'dark' ? '#14121b' : '#f3f1f8')
+    meta?.setAttribute('content', resolved === 'dark' ? '#0e1412' : '#eef3f0')
   }, [resolved])
 }
 

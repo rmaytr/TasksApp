@@ -5,7 +5,7 @@ import { RadarView } from '../radar/RadarView'
 import type { TasksMode } from '../route'
 import { useStore } from '../store/useStore'
 import { Icon, type IconName } from './Icon'
-import { ListView, type ListFilters } from './ListView'
+import { ListView, type ListFilters, type ListSort } from './ListView'
 import './TasksView.css'
 
 const MODES: readonly { mode: TasksMode; label: string; icon: IconName }[] = [
@@ -14,11 +14,10 @@ const MODES: readonly { mode: TasksMode; label: string; icon: IconName }[] = [
   { mode: 'radar', label: 'Radar', icon: 'radar' },
 ]
 
-const PRIORITIES: readonly { value: ListFilters['priority']; label: string }[] = [
-  { value: 'all', label: 'Any priority' },
-  { value: 'high', label: 'High' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'low', label: 'Low' },
+const SORTS: readonly { value: ListSort; label: string }[] = [
+  { value: 'smart', label: 'Smart order' },
+  { value: 'due', label: 'Due date' },
+  { value: 'priority', label: 'Priority' },
 ]
 
 /** All tasks, or one area's tasks, as a list, a map or a radar. */
@@ -29,7 +28,7 @@ export function TasksView() {
   const setQuickAddOpen = useStore((s) => s.setQuickAddOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
   const area = useAreaMap().get(areaId ?? '')
-  const [filters, setFilters] = useState<ListFilters>({ priority: 'all', waiting: false, showDone: false, query: '' })
+  const [filters, setFilters] = useState<ListFilters>({ sort: 'smart', reverse: false, showDone: false, query: '' })
   const title = area?.name ?? 'All tasks'
   const missingArea = areaId !== null && !area
 
@@ -73,28 +72,37 @@ export function TasksView() {
                 aria-label="Search tasks"
               />
             </label>
-            <div className="tasks__chips" role="group" aria-label="Priority">
-              {PRIORITIES.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  className="chip"
-                  aria-pressed={filters.priority === p.value}
-                  onClick={() => setFilters({ ...filters, priority: p.value })}
-                >
-                  {p.value !== 'all' && <span className="prio" data-level={p.value}><i /><i /><i /></span>}
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <div className="tasks__chips">
-              <button type="button" className="chip" aria-pressed={filters.waiting} onClick={() => setFilters({ ...filters, waiting: !filters.waiting })}>
-                Waiting on someone
-              </button>
-              <button type="button" className="chip" aria-pressed={filters.showDone} onClick={() => setFilters({ ...filters, showDone: !filters.showDone })}>
-                Show done
-              </button>
-            </div>
+            <label className="tasks__sort">
+              <Icon name="sort" size={16} />
+              <span className="visually-hidden">Sort by</span>
+              <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value as ListSort })}>
+                {SORTS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="icon-btn tasks__toggle"
+              aria-pressed={filters.reverse}
+              onClick={() => setFilters({ ...filters, reverse: !filters.reverse })}
+              aria-label="Reverse order"
+              title="Reverse order"
+            >
+              <Icon name="arrowDown" size={18} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn tasks__toggle"
+              aria-pressed={filters.showDone}
+              onClick={() => setFilters({ ...filters, showDone: !filters.showDone })}
+              aria-label="Show done tasks"
+              title="Show done tasks"
+            >
+              <Icon name="doneAll" size={18} />
+            </button>
           </div>
         )}
       </header>

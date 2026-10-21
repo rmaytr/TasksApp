@@ -11,7 +11,7 @@ import './SettingsDialog.css'
 
 const SHORTCUTS: readonly [string, string][] = [
   ['/', 'Add a task'],
-  ['1–3', 'Today, All tasks, Focus'],
+  ['1–3', 'Today, All tasks, Lock in'],
   ['Ctrl K', 'Find any task'],
   ['i', 'Import'],
   ['[ ]', 'On a radar dot: pull closer, push out'],

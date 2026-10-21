@@ -10,7 +10,7 @@ import { useStore } from '../store/useStore'
 import { Capture } from './Capture'
 import { HeadsUpStrip } from './HeadsUpStrip'
 import { Icon } from './Icon'
-import { PlanButton } from './PlanButton'
+import { DuePill } from './DueDate'
 import { PriorityMark, TaskRow } from './TaskRow'
 import './HomeView.css'
 
@@ -34,6 +34,7 @@ export function HomeView() {
   const hidden = useStore((s) => s.prefs.hiddenAreas)
   const lastResetAt = useStore((s) => s.prefs.lastResetAt)
   const navigate = useStore((s) => s.navigate)
+  const startFocus = useStore((s) => s.startFocus)
   const now = useNow()
   const [skipped, setSkipped] = useState<string[]>([])
   const [showAll, setShowAll] = useState(false)
@@ -81,9 +82,11 @@ export function HomeView() {
         <section className="home__section" aria-labelledby="next-h">
           <div className="home__section-head">
             <h2 id="next-h">Up next</h2>
-            <PlanButton />
+            <button type="button" className="btn btn--sm home__lockin" onClick={() => startFocus(null)}>
+              <Icon name="target" size={16} /> Lock in
+            </button>
           </div>
-          <UpNextCard task={next} onSkip={() => setSkipped((s) => [...s, next.id])} />
+          <UpNextCard task={next} now={now} onSkip={() => setSkipped((s) => [...s, next.id])} />
         </section>
       ) : (
         <EmptyHome hasTasks={openCount > 0} onReset={() => setSkipped([])} />
@@ -99,7 +102,7 @@ export function HomeView() {
           <ul className="trows">
             <AnimatePresence initial={false}>
               {shownToday.map((p) => (
-                <TaskRow key={p.task.id} task={p.task} now={now} showArea blockedBy={blockerName(p.blockedBy)} />
+                <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
               ))}
             </AnimatePresence>
           </ul>
@@ -124,7 +127,7 @@ export function HomeView() {
           <ul className="trows">
             <AnimatePresence initial={false}>
               {week.slice(0, 4).map((p) => (
-                <TaskRow key={p.task.id} task={p.task} now={now} showArea blockedBy={blockerName(p.blockedBy)} />
+                <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
               ))}
             </AnimatePresence>
           </ul>
@@ -146,7 +149,7 @@ export function HomeView() {
   )
 }
 
-function UpNextCard({ task, onSkip }: { task: Task; onSkip: () => void }) {
+function UpNextCard({ task, now, onSkip }: { task: Task; now: Date; onSkip: () => void }) {
   const area = useAreaMap().get(task.areaId)
   const setDone = useStore((s) => s.setDone)
   const startFocus = useStore((s) => s.startFocus)
@@ -161,7 +164,10 @@ function UpNextCard({ task, onSkip }: { task: Task; onSkip: () => void }) {
         <span className="next__area">
           <span className="dot" /> {area?.name}
         </span>
-        <PriorityMark task={task} />
+        <span className="next__meta">
+          <PriorityMark task={task} />
+          {task.due && <DuePill due={task.due} now={now} />}
+        </span>
       </div>
       <button type="button" className="next__title" onClick={() => select(task.id)}>
         {task.title}

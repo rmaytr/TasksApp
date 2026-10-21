@@ -62,8 +62,8 @@ export default defineConfig({
         name: 'Cairn — one step at a time',
         short_name: 'Cairn',
         description: 'A calm to-do app that sorts your tasks and shows you one next step. Free, private, no sign-up.',
-        theme_color: '#F3F1F8',
-        background_color: '#F3F1F8',
+        theme_color: '#EEF3F0',
+        background_color: '#EEF3F0',
         display: 'standalone',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
