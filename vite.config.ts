@@ -8,13 +8,18 @@ const base = process.env.VITE_BASE ?? '/'
 
 // Production-only CSP: the app makes no network calls, so everything is locked to 'self'.
 // (Dev is excluded because Vite's HMR preamble is an inline script.)
+// Sync (optional) talks to exactly one Supabase project; nothing else is reachable.
+const supabaseUrl = process.env.VITE_SUPABASE_URL?.trim() ?? ''
+const supabaseOrigin = supabaseUrl.startsWith('https://') ? new URL(supabaseUrl).origin : ''
+const connectSrc = ["'self'", supabaseOrigin, supabaseOrigin.replace('https://', 'wss://')].filter(Boolean).join(' ')
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'sha256-THEME_HASH'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src ${connectSrc}`,
   "manifest-src 'self'",
   "worker-src 'self'",
   "object-src 'none'",
@@ -43,7 +48,7 @@ export default defineConfig({
     contentSecurityPolicy(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'privacy.html'],
       manifest: {
         name: 'Nearer — everything you carry, at a glance',
         short_name: 'Nearer',
@@ -59,6 +64,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The privacy page is its own document; don't answer it with the app shell.
+        navigateFallbackDenylist: [/privacy\.html$/],
       },
     }),
   ],

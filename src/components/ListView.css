@@ -253,3 +253,23 @@
 .list__empty:empty {
   display: none;
 }
+
+.list__new-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 24px;
+  border: 1.5px dashed var(--field-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.list__new-area:hover {
+  background: var(--surface);
+  color: var(--ink);
+}

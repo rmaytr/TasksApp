@@ -159,7 +159,7 @@
     inset: auto 0 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--rule);
     background: color-mix(in srgb, var(--bg) 88%, transparent);
@@ -183,4 +183,58 @@
     color: var(--ink);
     box-shadow: inset 0 3px 0 var(--ink);
   }
+}
+
+.rail__new-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 520;
+  text-align: left;
+}
+
+.rail__new-area:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.sync-badge {
+  position: relative;
+}
+
+.sync-badge__dot {
+  position: absolute;
+  top: 8px;
+  left: 22px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.sync-badge[data-status='idle'] .sync-badge__dot {
+  background: var(--area-teal);
+}
+
+.sync-badge[data-status='syncing'] .sync-badge__dot {
+  background: var(--area-sky);
+}
+
+.sync-badge[data-status='error'] .sync-badge__dot,
+.sync-badge[data-status='locked'] .sync-badge__dot {
+  background: var(--area-amber);
+}
+
+.icon-btn.sync-badge .sync-badge__dot {
+  top: 7px;
+  left: auto;
+  right: 7px;
 }

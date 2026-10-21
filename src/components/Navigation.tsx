@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { areaStyle } from '../hooks'
+import { MAX_AREAS } from '../model/defaults'
 import { useStore, type View } from '../store/useStore'
 import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
+import { SyncBadge } from './SyncBadge'
 import './Navigation.css'
 
 const VIEW_ITEMS: readonly { view: View; label: string; icon: IconName; hint: string }[] = [
   { view: 'radar', label: 'Radar', icon: 'radar', hint: 'Everything at a glance' },
+  { view: 'map', label: 'Map', icon: 'map', hint: 'Areas, tasks and steps as a tree' },
   { view: 'list', label: 'List', icon: 'list', hint: 'Edit and scan' },
   { view: 'focus', label: 'Focus', icon: 'focus', hint: 'One thing at a time' },
   { view: 'reset', label: 'Reset', icon: 'reset', hint: 'Weekly fresh start' },
@@ -46,6 +49,7 @@ export function Rail() {
       </ul>
       <AreaFilter />
       <div className="rail__footer">
+        <SyncBadge />
         <button type="button" className="btn btn--ghost" onClick={() => setImportOpen(true)}>
           <Icon name="import" size={18} /> Import
         </button>
@@ -62,6 +66,7 @@ function AreaFilter() {
   const tasks = useStore((s) => s.tasks)
   const hidden = useStore((s) => s.prefs.hiddenAreas)
   const setPrefs = useStore((s) => s.setPrefs)
+  const setNewAreaOpen = useStore((s) => s.setNewAreaOpen)
 
   const counts = useMemo(() => {
     const map = new Map<string, number>()
@@ -100,6 +105,11 @@ function AreaFilter() {
           )
         })}
       </ul>
+      {areas.length < MAX_AREAS && (
+        <button type="button" className="rail__new-area" onClick={() => setNewAreaOpen(true)}>
+          <Icon name="plus" size={16} /> New area
+        </button>
+      )}
     </section>
   )
 }

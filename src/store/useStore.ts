@@ -1,13 +1,16 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { formatDue } from '../lib/dates'
 import { newId } from '../lib/ids'
 import { DEFAULT_AREAS, MAX_AREAS } from '../model/defaults'
-import { AREA_COLORS, type Area, type Horizon, type Task, type TaskDraft } from '../model/types'
+import { nextOccurrence } from '../model/repeat'
+import { AREA_COLORS, type Area, type AreaColor, type Horizon, type Task, type TaskDraft, type Tombstone } from '../model/types'
 import { draftToTask } from './build'
 import { createDebouncedIdbStorage, requestPersistentStorage } from './persist'
 import { DEFAULT_PREFS, sanitizePersisted, type PersistedState, type Prefs } from './schema'
 
-export type View = 'radar' | 'list' | 'focus' | 'reset'
+export type View = 'radar' | 'map' | 'list' | 'focus' | 'reset'
+export const VIEWS: readonly View[] = ['radar', 'map', 'list', 'focus', 'reset']
 
 export interface Toast {
   id: string
@@ -20,6 +23,7 @@ export interface Toast {
 interface Snapshot {
   areas: Area[]
   tasks: Task[]
+  tombstones: Tombstone[]
   hiddenAreas: string[]
   /** The toast that offers this undo; once it is gone the snapshot is stale. */
   toastId: string
@@ -28,6 +32,17 @@ interface Snapshot {
 export interface DraftWithArea {
   draft: TaskDraft
   areaId: string
+}
+
+export type SyncStatus = 'off' | 'signed-out' | 'locked' | 'idle' | 'syncing' | 'offline' | 'error'
+
+export interface SyncInfo {
+  status: SyncStatus
+  email: string | null
+  lastSyncedAt: number | null
+  message: string | null
+  /** Whether the signed-in account already has an encrypted vault (decides create vs. unlock). */
+  vault: 'unknown' | 'missing' | 'present'
 }
 
 interface UiState {
@@ -42,8 +57,12 @@ interface UiState {
   lastCompleted: { id: string; areaId: string; at: number } | null
   importOpen: boolean
   settingsOpen: boolean
+  /** The "new area" dialog, reachable from the rail, radar, map and list. */
+  newAreaOpen: boolean
+  accountOpen: boolean
   /** Task pinned in Focus; null means "whatever is nearest". */
   focusTaskId: string | null
+  sync: SyncInfo
 }
 
 interface Actions {
@@ -56,10 +75,13 @@ interface Actions {
   addStep: (taskId: string, title: string) => void
   updateStep: (taskId: string, stepId: string, patch: { title?: string; done?: boolean }) => void
   deleteStep: (taskId: string, stepId: string) => void
-  addArea: (name: string) => string | null
-  updateArea: (id: string, patch: Partial<Omit<Area, 'id'>>) => void
+  addArea: (name: string, color?: AreaColor) => string | null
+  updateArea: (id: string, patch: Partial<Omit<Area, 'id' | 'updatedAt'>>) => void
   deleteArea: (id: string, moveTasksTo: string) => void
   clearEverything: () => void
+  /** Replaces data with a merged copy from sync: no undo, no timestamp changes. */
+  applySynced: (doc: { areas: Area[]; tasks: Task[]; tombstones: Tombstone[] }) => void
+  setSync: (patch: Partial<SyncInfo>) => void
   undo: () => void
   showToast: (message: string, undoable?: boolean, sticky?: boolean) => void
   dismissToast: () => void
@@ -68,6 +90,8 @@ interface Actions {
   setPrefs: (patch: Partial<Prefs>) => void
   setImportOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean) => void
+  setNewAreaOpen: (open: boolean) => void
+  setAccountOpen: (open: boolean) => void
   startFocus: (id: string | null) => void
 }
 
@@ -77,11 +101,10 @@ const STORAGE_KEY = 'nearer-state'
 const SCHEMA_VERSION = 1
 
 const touch = (task: Task, patch: Partial<Task>): Task => ({ ...task, ...patch, updatedAt: Date.now() })
+const tomb = (id: string, kind: Tombstone['kind']): Tombstone => ({ id, kind, at: Date.now() })
 
 /** Assigned once the store exists; referencing the store inside its own config would break inference. */
 let canPersist = (): boolean => false
-
-const VIEWS: readonly View[] = ['radar', 'list', 'focus', 'reset']
 
 /** Starting view from the URL hash, so a reload on #list doesn't push a bogus #radar entry. */
 function initialView(): View {
@@ -98,19 +121,17 @@ export const useStore = create<StoreState>()(
        * valid while that toast is showing and nothing else has changed since.
        */
       const withUndo = (message: string, change: () => void): void => {
-        const { areas, tasks, prefs } = get()
+        const { areas, tasks, tombstones, prefs } = get()
         const toastId = newId()
         change()
         set({
-          undoSnapshot: { areas, tasks, hiddenAreas: prefs.hiddenAreas, toastId },
+          undoSnapshot: { areas, tasks, tombstones, hiddenAreas: prefs.hiddenAreas, toastId },
           toast: { id: toastId, message, undoable: true },
         })
       }
       /** Any ordinary edit makes an older undo snapshot unsafe to restore. */
       const invalidateUndo = (): Partial<UiState> =>
-        get().undoSnapshot
-          ? { undoSnapshot: null, toast: get().toast?.undoable ? null : get().toast }
-          : {}
+        get().undoSnapshot ? { undoSnapshot: null, toast: get().toast?.undoable ? null : get().toast } : {}
       const mapTask = (id: string, fn: (t: Task) => Task): void => {
         set((s) => ({ ...invalidateUndo(), tasks: s.tasks.map((t) => (t.id === id ? fn(t) : t)) }))
       }
@@ -124,6 +145,7 @@ export const useStore = create<StoreState>()(
       return {
         areas: DEFAULT_AREAS.map((a) => ({ ...a })),
         tasks: [],
+        tombstones: [],
         prefs: DEFAULT_PREFS,
         hydrated: false,
         storageBlocked: false,
@@ -134,7 +156,10 @@ export const useStore = create<StoreState>()(
         lastCompleted: null,
         importOpen: false,
         settingsOpen: false,
+        newAreaOpen: false,
+        accountOpen: false,
         focusTaskId: null,
+        sync: { status: 'off', email: null, lastSyncedAt: null, message: null, vault: 'unknown' },
 
         addTask: (draft, areaId, fallback = 'week') => {
           const task = draftToTask(draft, areaId, new Date(), fallback)
@@ -149,10 +174,11 @@ export const useStore = create<StoreState>()(
           withUndo(`Added ${created.length} ${created.length === 1 ? 'task' : 'tasks'}`, () =>
             set((s) => ({
               // Replacing clears tasks only; areas stay because the incoming rows already point at them.
-              areas: [...s.areas, ...(options.newAreas ?? [])]
+              areas: [...s.areas, ...(options.newAreas ?? []).map((a) => ({ ...a, updatedAt: Date.now() }))]
                 .filter((a, i, all) => all.findIndex((b) => b.id === a.id) === i)
                 .slice(0, MAX_AREAS),
               tasks: [...(options.replace ? [] : s.tasks), ...created],
+              tombstones: options.replace ? [...s.tombstones, ...s.tasks.map((t) => tomb(t.id, 'task'))] : s.tombstones,
               prefs: unhide(s.prefs, created.map((t) => t.areaId)),
             })),
           )
@@ -173,9 +199,17 @@ export const useStore = create<StoreState>()(
         setDone: (id, done) => {
           const task = get().tasks.find((t) => t.id === id)
           if (!task || task.done === done) return
-          withUndo(done ? `Done: ${task.title}` : 'Marked as not done', () =>
-            mapTask(id, (t) => touch(t, { done, doneAt: done ? Date.now() : null })),
-          )
+          const now = new Date()
+          const next = done ? nextOccurrence(task, now, newId) : null
+          const message = !done
+            ? 'Marked as not done'
+            : next?.due
+              ? `Done. Next one is due ${formatDue(next.due, now)}`
+              : `Done: ${task.title}`
+          withUndo(message, () => {
+            mapTask(id, (t) => touch(t, { done, doneAt: done ? Date.now() : null }))
+            if (next) set((s) => ({ tasks: [...s.tasks, next] }))
+          })
           if (done) set({ lastCompleted: { id, areaId: task.areaId, at: Date.now() } })
         },
 
@@ -185,6 +219,7 @@ export const useStore = create<StoreState>()(
           withUndo(`Deleted "${task.title}"`, () =>
             set((s) => ({
               tasks: s.tasks.filter((t) => t.id !== id),
+              tombstones: [...s.tombstones, tomb(id, 'task')],
               selectedId: s.selectedId === id ? null : s.selectedId,
             })),
           )
@@ -204,19 +239,24 @@ export const useStore = create<StoreState>()(
         deleteStep: (taskId, stepId) =>
           mapTask(taskId, (t) => touch(t, { steps: t.steps.filter((st) => st.id !== stepId) })),
 
-        addArea: (name) => {
+        addArea: (name, color) => {
           const clean = name.trim().slice(0, 40)
           const { areas } = get()
           if (!clean || areas.length >= MAX_AREAS) return null
+          const existing = areas.find((a) => a.name.toLowerCase() === clean.toLowerCase())
+          if (existing) return existing.id
           const used = new Set(areas.map((a) => a.color))
-          const color = AREA_COLORS.find((c) => !used.has(c)) ?? AREA_COLORS[areas.length % AREA_COLORS.length]
-          const area: Area = { id: newId(), name: clean, color }
-          set({ ...invalidateUndo(), areas: [...areas, area] })
+          const pick = color ?? AREA_COLORS.find((c) => !used.has(c)) ?? AREA_COLORS[areas.length % AREA_COLORS.length]
+          const area: Area = { id: newId(), name: clean, color: pick, updatedAt: Date.now() }
+          set((s) => ({ ...invalidateUndo(), areas: [...areas, area], prefs: unhide(s.prefs, [area.id]) }))
           return area.id
         },
 
         updateArea: (id, patch) =>
-          set((s) => ({ ...invalidateUndo(), areas: s.areas.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+          set((s) => ({
+            ...invalidateUndo(),
+            areas: s.areas.map((a) => (a.id === id ? { ...a, ...patch, updatedAt: Date.now() } : a)),
+          })),
 
         deleteArea: (id, moveTasksTo) => {
           const { areas } = get()
@@ -227,6 +267,7 @@ export const useStore = create<StoreState>()(
             set((s) => ({
               areas: s.areas.filter((a) => a.id !== id),
               tasks: s.tasks.map((t) => (t.areaId === id ? touch(t, { areaId: moveTasksTo }) : t)),
+              tombstones: [...s.tombstones, tomb(id, 'area')],
               prefs: { ...s.prefs, hiddenAreas: s.prefs.hiddenAreas.filter((h) => h !== id) },
             })),
           )
@@ -236,19 +277,34 @@ export const useStore = create<StoreState>()(
           withUndo('Cleared all tasks', () =>
             set((s) => ({
               tasks: [],
-              areas: DEFAULT_AREAS.map((a) => ({ ...a })),
+              tombstones: [...s.tombstones, ...s.tasks.map((t) => tomb(t.id, 'task'))],
               selectedId: null,
               focusTaskId: null,
               prefs: { ...s.prefs, hiddenAreas: [] },
             })),
           ),
 
+        applySynced: (doc) =>
+          set((s) => ({
+            ...invalidateUndo(),
+            areas: doc.areas.length > 0 ? doc.areas : s.areas,
+            tasks: doc.tasks,
+            tombstones: doc.tombstones,
+            selectedId: doc.tasks.some((t) => t.id === s.selectedId) ? s.selectedId : null,
+          })),
+
+        setSync: (patch) => set((s) => ({ sync: { ...s.sync, ...patch } })),
+
         undo: () => {
           const { undoSnapshot: snap, toast } = get()
           if (!snap || toast?.id !== snap.toastId) return
+          // Undoing must also count as a new edit for sync, so re-stamp what it brings back.
+          const now = Date.now()
+          const current = new Map(get().tasks.map((t) => [t.id, t]))
           set((s) => ({
-            areas: snap.areas,
-            tasks: snap.tasks,
+            areas: snap.areas.map((a) => ({ ...a, updatedAt: now })),
+            tasks: snap.tasks.map((t) => (current.get(t.id) === t ? t : { ...t, updatedAt: now })),
+            tombstones: snap.tombstones,
             prefs: { ...s.prefs, hiddenAreas: snap.hiddenAreas },
             undoSnapshot: null,
             toast: null,
@@ -264,6 +320,8 @@ export const useStore = create<StoreState>()(
         setPrefs: (patch) => set((s) => ({ prefs: { ...s.prefs, ...patch } })),
         setImportOpen: (open) => set({ importOpen: open }),
         setSettingsOpen: (open) => set({ settingsOpen: open }),
+        setNewAreaOpen: (open) => set({ newAreaOpen: open }),
+        setAccountOpen: (open) => set({ accountOpen: open }),
         startFocus: (id) => set({ focusTaskId: id, view: 'focus', selectedId: null }),
       }
     },
@@ -272,7 +330,7 @@ export const useStore = create<StoreState>()(
       version: SCHEMA_VERSION,
       // Never write before saved data has loaded (or after loading failed), or it would be overwritten.
       storage: createJSONStorage(() => createDebouncedIdbStorage(() => canPersist())),
-      partialize: (s): PersistedState => ({ areas: s.areas, tasks: s.tasks, prefs: s.prefs }),
+      partialize: (s): PersistedState => ({ areas: s.areas, tasks: s.tasks, tombstones: s.tombstones, prefs: s.prefs }),
       // Future schema changes upgrade `persisted` step by step here; v1 only needs validation.
       migrate: (persisted) => sanitizePersisted(persisted),
       merge: (persisted, current) => ({ ...current, ...sanitizePersisted(persisted) }),

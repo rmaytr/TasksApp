@@ -1,0 +1,119 @@
+.account {
+  gap: 16px;
+}
+
+.account__explain {
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  line-height: 1.55;
+}
+
+.account__form {
+  display: grid;
+  gap: 12px;
+}
+
+.account__form label:not(.account__check) {
+  display: grid;
+  gap: 6px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.account__code {
+  max-width: 12ch;
+  font-size: var(--step-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2em;
+}
+
+.account__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.account__fine {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+
+.account__fine.is-bad {
+  color: var(--area-rose-text);
+}
+
+.account__fine a {
+  color: var(--ink-2);
+}
+
+.account__who {
+  font-weight: 640;
+}
+
+.account__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.account__check .check {
+  margin-top: 2px;
+}
+
+.account__warn {
+  padding: 10px 12px;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--area-amber) 12%, transparent);
+  color: var(--ink);
+}
+
+.account__error {
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--area-rose) 12%, transparent);
+  font-size: var(--step--1);
+}
+
+.account__oauth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--bg);
+}
+
+.account__forgot,
+.account__signout {
+  justify-self: start;
+  padding: 0 4px;
+  color: var(--ink-2);
+}
+
+.account__danger summary {
+  cursor: pointer;
+  color: var(--area-rose-text);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.account__danger p {
+  margin: 8px 0;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.account__danger .field {
+  width: 10rem;
+}

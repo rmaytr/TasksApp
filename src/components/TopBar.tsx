@@ -2,6 +2,7 @@ import { useStore } from '../store/useStore'
 import { CaptureBar } from './CaptureBar'
 import { Icon } from './Icon'
 import { Logo } from './Logo'
+import { SyncBadge } from './SyncBadge'
 import './TopBar.css'
 
 export function TopBar() {
@@ -14,6 +15,7 @@ export function TopBar() {
       </div>
       <CaptureBar />
       <div className="topbar__actions">
+        <SyncBadge compact />
         <button type="button" className="icon-btn" onClick={() => setImportOpen(true)} aria-label="Import tasks">
           <Icon name="import" />
         </button>

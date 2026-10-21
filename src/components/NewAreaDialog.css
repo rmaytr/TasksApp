@@ -1,0 +1,87 @@
+.new-area {
+  gap: 16px;
+}
+
+.new-area__intro {
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}
+
+.new-area__field {
+  display: grid;
+  gap: 6px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.new-area__error {
+  margin-top: -8px;
+  color: var(--area-rose-text);
+  font-size: var(--step--1);
+}
+
+.new-area__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: -6px;
+}
+
+.new-area__suggest .btn {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px dashed var(--field-border);
+  color: var(--ink-2);
+}
+
+.new-area__colors {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.new-area__colors legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.new-area__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.new-area__swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.new-area__swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.new-area__preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--bg);
+  font-weight: 680;
+  font-stretch: var(--wide);
+}
+
+@media (pointer: coarse) {
+  .new-area__swatch {
+    width: 44px;
+    height: 44px;
+  }
+}

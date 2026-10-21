@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { formatDue } from '../lib/dates'
 import { areaStyle, useAreaMap, useNow, useReducedMotion } from '../hooks'
 import { compareUrgency, effectiveHorizon, isStale } from '../model/derive'
+import { MAX_AREAS } from '../model/defaults'
 import { HORIZONS, HORIZON_LABEL, type Area, type Horizon, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Icon } from './Icon'
@@ -36,6 +37,7 @@ export function ListView() {
   const areas = useStore((s) => s.areas)
   const tasks = useStore((s) => s.tasks)
   const hidden = useStore((s) => s.prefs.hiddenAreas)
+  const setNewAreaOpen = useStore((s) => s.setNewAreaOpen)
   const now = useNow()
 
   const groups = useMemo((): Group[] => {
@@ -91,6 +93,11 @@ export function ListView() {
       {groups.map((group) => (
         <GroupSection key={group.key} group={group} grouping={grouping} now={now} searching={query.length > 0} />
       ))}
+      {grouping === 'area' && !query && areas.length < MAX_AREAS && (
+        <button type="button" className="list__new-area" onClick={() => setNewAreaOpen(true)}>
+          <Icon name="plus" size={18} /> New area
+        </button>
+      )}
       <p className="list__empty" role="status">
         {query && total === 0 ? `Nothing matches “${query}”.` : ''}
       </p>
@@ -144,7 +151,7 @@ function GroupSection({ group, grouping, now, searching }: GroupSectionProps) {
   )
 }
 
-function Row({ task, now, showRing }: { task: Task; now: Date; showRing: boolean }) {
+export function Row({ task, now, showRing }: { task: Task; now: Date; showRing: boolean }) {
   const [open, setOpen] = useState(false)
   const setDone = useStore((s) => s.setDone)
   const select = useStore((s) => s.select)

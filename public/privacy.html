@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy · Nearer</title>
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      :root { --bg: #e8ece6; --ink: #17212b; --ink2: #4c5864; --rule: #c6cec5; --surface: #f5f7f3; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #121920; --ink: #e5ebe5; --ink2: #a9b4bd; --rule: #2f3b46; --surface: #1a232c; } }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      main { max-width: 44rem; margin: 0 auto; padding: 40px 20px 80px; }
+      h1 { font-size: 2rem; line-height: 1.1; margin: 0 0 4px; letter-spacing: -0.01em; }
+      h2 { font-size: 1.15rem; margin: 2em 0 0.4em; }
+      p, li { color: var(--ink2); }
+      strong { color: var(--ink); }
+      a { color: inherit; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--surface); }
+      th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+      .wrap { overflow-x: auto; }
+      .date { font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="./">← Back to Nearer</a></p>
+      <h1>Privacy</h1>
+      <p class="date">Effective October 21, 2026</p>
+      <p>Nearer is a small, free to-do app made by Rodion and shared with friends. It shows no ads and sells nothing.</p>
+
+      <h2>The short version</h2>
+      <ul>
+        <li><strong>Without an account, nothing leaves your device.</strong> Your tasks live in your browser's storage.</li>
+        <li><strong>With an account, your tasks are end-to-end encrypted</strong> with a passphrase only you know before upload. We can't read them, and neither can our hosting provider.</li>
+        <li><strong>We keep the minimum:</strong> your email (for sign-in codes) and the encrypted backup.</li>
+        <li><strong>No analytics, no trackers, no advertising cookies, no selling or sharing of data.</strong></li>
+        <li><strong>You can delete everything</strong> at any time from the app.</li>
+      </ul>
+
+      <h2>What we collect</h2>
+      <div class="wrap">
+        <table>
+          <thead><tr><th>Data</th><th>When</th><th>Why</th><th>Who can read it</th></tr></thead>
+          <tbody>
+            <tr><td>Tasks, areas, steps, notes</td><td>Always, on your device only</td><td>So the app works</td><td>You, and anyone using your unlocked device</td></tr>
+            <tr><td>Email address</td><td>Only if you sign in</td><td>To send sign-in codes and identify your account</td><td>The app operator and Supabase (hosting)</td></tr>
+            <tr><td>Encrypted backup (ciphertext, random salt, version, timestamps)</td><td>Only if you turn on sync</td><td>To sync between your devices</td><td>Nobody without your passphrase</td></tr>
+            <tr><td>Sign-in metadata (time, IP in server logs)</td><td>Only if you sign in</td><td>Security and abuse prevention</td><td>The app operator and Supabase, per their log retention</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>We never receive your <strong>passphrase</strong>, your <strong>encryption key</strong>, or the <strong>contents of your tasks</strong>.</p>
+
+      <h2>How your data is protected</h2>
+      <ul>
+        <li><strong>On your device:</strong> stored in IndexedDB. The encryption key is stored as a non-extractable key that the page can use but not read.</li>
+        <li><strong>In transit:</strong> HTTPS only.</li>
+        <li><strong>On the server:</strong> AES-GCM-256 encryption done in your browser, with a key derived from your passphrase (PBKDF2-SHA-256, 600,000 iterations, random salt). Database rules let each account read and write only its own row.</li>
+      </ul>
+      <p>If you forget your passphrase, <strong>we cannot recover your backup</strong>. Your tasks remain on any device that still has them, and you can create a new backup from there.</p>
+
+      <h2>Where data is stored</h2>
+      <p>The encrypted backup and your email are stored with <a href="https://supabase.com/privacy">Supabase</a>. The app itself is served by GitHub Pages, which may log visitors' IP addresses like any web host.</p>
+
+      <h2>How long we keep it</h2>
+      <ul>
+        <li>Encrypted backups and your email: until you delete your account.</li>
+        <li>Deleting your account (Sync across devices → Delete account) removes your email and backup immediately. Provider backups age out on their own schedule.</li>
+        <li>Local data: until you clear it in Settings or clear your browser's site data.</li>
+      </ul>
+
+      <h2>Your choices</h2>
+      <p>Use Nearer without an account; export your data any time (Settings → Back up); delete your account yourself; or ask questions by opening an issue at <a href="https://github.com/rmaytr/TasksApp/issues">github.com/rmaytr/TasksApp</a> or contacting Rodion directly.</p>
+
+      <h2>Children</h2>
+      <p>Nearer is not directed at children under 13, and we don't knowingly collect their information.</p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, the date at the top changes. Because your tasks are encrypted with your passphrase, no future change can give us access to past backups.</p>
+    </main>
+  </body>
+</html>

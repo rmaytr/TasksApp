@@ -17,13 +17,10 @@
 
 /* ---------- Rings & spokes ---------- */
 .radar__ring {
-  fill: none;
+  /* Opacity is set per ring: strongest at Today, faint at Someday, so distance reads at a glance. */
+  fill: var(--ink);
   stroke: var(--ring-line);
   stroke-width: 1;
-}
-
-.radar__ring--even {
-  fill: var(--ring-fill);
 }
 
 .radar__spoke {
@@ -33,9 +30,9 @@
 }
 
 .radar__ring-label {
-  fill: var(--ink-3);
-  font-size: 11px;
-  font-weight: 560;
+  fill: var(--ink-2);
+  font-weight: 600;
+  letter-spacing: 0.02em;
   paint-order: stroke;
   stroke: var(--bg);
   stroke-width: 3px;
@@ -71,14 +68,34 @@
   outline: none;
 }
 
-.radar__hub circle {
-  fill: var(--hub);
+.radar__hub-disc {
+  fill: var(--surface);
+  stroke: var(--ink-3);
+  stroke-width: 1px;
   transition: transform 0.25s var(--ease-out);
 }
 
-.radar__hub:hover circle,
-.radar__hub:focus-visible circle {
-  transform: scale(1.06);
+.radar__hub:not(.is-clear) .radar__hub-disc {
+  fill: var(--hub);
+}
+
+.radar__hub:hover .radar__hub-disc,
+.radar__hub:focus-visible .radar__hub-disc {
+  transform: scale(1.05);
+}
+
+.radar__hub-track {
+  fill: none;
+  stroke: var(--ring-line);
+  stroke-width: 3;
+}
+
+.radar__hub-done {
+  fill: none;
+  stroke: var(--area-teal);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s var(--ease-out);
 }
 
 .radar__hub-ring {
@@ -93,7 +110,7 @@
 }
 
 .radar__hub text {
-  fill: var(--on-hub);
+  fill: var(--ink);
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
@@ -348,4 +365,38 @@
     bottom: 8px;
     left: 4px;
   }
+}
+
+.radar__new-area {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  cursor: pointer;
+}
+
+.radar__hub:not(.is-clear) text {
+  fill: var(--on-hub);
+}
+
+.radar__label.is-strong {
+  fill: var(--ink);
+  font-weight: 640;
+}
+
+.node {
+  cursor: grab;
+}
+
+/* Phone: radar on top at full width, the near list underneath. */
+.radar-phone {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+}
+
+.radar.radar--phone {
+  position: relative;
+  inset: auto;
+  height: min(100vw, 62dvh);
 }

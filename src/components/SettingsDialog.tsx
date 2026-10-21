@@ -10,7 +10,8 @@ import './SettingsDialog.css'
 
 const SHORTCUTS: readonly [string, string][] = [
   ['/', 'Add a task'],
-  ['1–4', 'Radar, List, Focus, Reset'],
+  ['1–5', 'Radar, Map, List, Focus, Reset'],
+  ['Ctrl K', 'Find any task'],
   ['i', 'Import'],
   ['[ ]', 'On a radar dot: pull closer, push out'],
   ['z', 'Undo the last change'],

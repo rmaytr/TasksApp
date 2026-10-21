@@ -25,7 +25,20 @@ export interface Area {
   id: string
   name: string
   color: AreaColor
+  /** Epoch ms of the last edit; used to merge synced copies (missing on old data = 0). */
+  updatedAt?: number
 }
+
+/** Remembers a deletion so a sync merge doesn't resurrect the item from another device. */
+export interface Tombstone {
+  id: string
+  kind: 'task' | 'area'
+  /** Epoch ms. */
+  at: number
+}
+
+export const REPEATS = ['none', 'daily', 'weekly', 'monthly'] as const
+export type Repeat = (typeof REPEATS)[number]
 
 export interface Step {
   id: string
@@ -55,6 +68,8 @@ export interface Task {
   updatedAt: number
   /** Minutes tracked in Focus. */
   spentMinutes: number
+  /** When done, a repeating task schedules its next copy. Old data has no field = 'none'. */
+  repeat?: Repeat
 }
 
 /** Shape produced by importers and the quick-capture parser before ids/timestamps exist. */
@@ -71,6 +86,7 @@ export interface TaskDraft {
   plan?: string | null
   steps?: { title: string; done?: boolean }[]
   done?: boolean
+  repeat?: Repeat
 }
 
 export interface ExportFile {

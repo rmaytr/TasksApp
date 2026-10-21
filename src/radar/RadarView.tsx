@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { formatDue } from '../lib/dates'
-import { areaColor, areaTextColor, useNow, useReducedMotion } from '../hooks'
-import { effectiveHorizon, horizonIndex, isStale } from '../model/derive'
-import { HORIZONS, HORIZON_LABEL, type Horizon } from '../model/types'
+import { daysBetween, formatDue, todayISO } from '../lib/dates'
+import { areaColor, areaTextColor, useMediaQuery, useNow, useReducedMotion } from '../hooks'
+import { doneThisWeek, effectiveHorizon, horizonIndex, isStale } from '../model/derive'
+import { MAX_AREAS } from '../model/defaults'
+import { HORIZONS, HORIZON_LABEL, type Horizon, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Icon } from '../components/Icon'
+import { NearList } from '../components/NearList'
+import { CoachTip } from '../components/CoachTip'
+import { RadarHub, RadarRings } from './RadarDecor'
 import { RadarNode } from './RadarNode'
-import { buildSectors, cellPath, hitCell, HUB, layoutRadar, OUTER, polar, RINGS, type PlacedNode } from './layout'
+import { buildSectors, cellPath, hitCell, HUB, layoutRadar, OUTER, RINGS, type PlacedNode } from './layout'
 import { LABEL_FONT_PX, placeLabels, truncate, type Box, type ScreenNode } from './labels'
 import { areaLabelPosition, baseScale } from './frame'
 import { usePanZoom } from './usePanZoom'
@@ -32,6 +36,7 @@ export function RadarView() {
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [playIntro] = useState(() => !introPlayed)
   const reduceMotion = useReducedMotion()
+  const phone = useMediaQuery('(max-width: 760px)')
   const now = useNow()
 
   const areas = useStore((s) => s.areas)
@@ -44,6 +49,7 @@ export function RadarView() {
   const setView = useStore((s) => s.setView)
   const setImportOpen = useStore((s) => s.setImportOpen)
   const onboarded = useStore((s) => s.prefs.onboarded)
+  const setNewAreaOpen = useStore((s) => s.setNewAreaOpen)
 
   useEffect(() => {
     introPlayed = true
@@ -73,6 +79,8 @@ export function RadarView() {
   const open = useMemo(() => tasks.filter((t) => !t.done), [tasks])
   const nodes = useMemo(() => layoutRadar(open, sectors, now), [open, sectors, now])
   const todayCount = useMemo(() => open.filter((t) => effectiveHorizon(t, now) === 'today').length, [open, now])
+  const weekCount = useMemo(() => open.filter((t) => effectiveHorizon(t, now) === 'week').length, [open, now])
+  const doneWeek = useMemo(() => doneThisWeek(tasks, now), [tasks, now])
   const areaLabels = useMemo(
     () =>
       sectors.map((s) => {
@@ -91,19 +99,21 @@ export function RadarView() {
         x: cx + n.x * scale,
         y: cy + n.y * scale,
         r: n.r * scale,
-        title: n.task.title,
+        title: labelText(n.task, now),
+        strong: n.task.high,
         rank: HORIZONS.indexOf(n.horizon) * 10 - (n.task.high ? 5 : 0),
         side: n.x >= 0 ? 1 : -1,
       }))
     // Ring and area names are fixed; task labels flow around them.
     const ringBoxes: Box[] = RINGS.map((ring) => {
-      const y = cy - ((ring.inner + ring.outer) / 2) * scale
-      return { x0: cx + 4, y0: y - 8, x1: cx + 8 + HORIZON_LABEL[ring.horizon].length * 6.3, y1: y + 8 }
+      const y = cy - ring.outer * scale + 9
+      const half = HORIZON_LABEL[ring.horizon].length * 3.3 + 4
+      return { x0: cx - half, y0: y - 7, x1: cx + half, y1: y + 7 }
     })
     const hubR = HUB * scale
     const hubBox: Box = { x0: cx - hubR, y0: cy - hubR, x1: cx + hubR, y1: cy + hubR }
     return placeLabels(screenNodes, size, [hubBox, ...ringBoxes, ...areaLabels.map((a) => a.box)])
-  }, [nodes, areaLabels, scale, cx, cy, size, drag?.id])
+  }, [nodes, areaLabels, scale, cx, cy, size, drag?.id, now])
 
   const dropTarget = drag?.active ? hitCell(drag.wx, drag.wy, sectors) : null
 
@@ -185,10 +195,10 @@ export function RadarView() {
   const focusedId = drag?.active ? drag.id : (hoverId ?? selectedId)
   const focusedNode = nodes.find((n) => n.task.id === focusedId)
 
-  return (
+  const radar = (
     <div
       ref={containerRef}
-      className={`radar${playIntro && !reduceMotion ? ' radar--intro' : ''}${drag?.active ? ' radar--dragging' : ''}`}
+      className={`radar${phone ? ' radar--phone' : ''}${playIntro && !reduceMotion ? ' radar--intro' : ''}${drag?.active ? ' radar--dragging' : ''}`}
       {...handlers}
     >
       <h1 className="visually-hidden">Radar</h1>
@@ -199,20 +209,7 @@ export function RadarView() {
       {size.w > 0 && (
         <svg className="radar__svg" width={size.w} height={size.h} role="group" aria-label="Task radar">
           <g transform={`translate(${cx} ${cy}) scale(${scale})`}>
-            {RINGS.map((ring, i) => (
-              <circle
-                key={ring.horizon}
-                r={ring.outer}
-                className={`radar__ring radar__ring--${i % 2 ? 'odd' : 'even'}`}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-            {sectors.length > 1 &&
-              sectors.map((s) => {
-                const a = polar(s.start, HUB)
-                const b = polar(s.start, OUTER)
-                return <line key={s.area.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="radar__spoke" vectorEffect="non-scaling-stroke" />
-              })}
+            <RadarRings sectors={sectors} scale={scale} />
             {dropTarget && (
               <path
                 d={cellPath(dropTarget.sector, dropTarget.ring)}
@@ -250,28 +247,7 @@ export function RadarView() {
                 onNudge={(d) => nudge(node.task.id, d)}
               />
             ))}
-            <g
-              className="radar__hub"
-              role="button"
-              tabIndex={0}
-              aria-label={`${todayCount} for today. Open Focus`}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setView('focus')}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter' && e.key !== ' ') return
-                e.preventDefault()
-                setView('focus')
-              }}
-            >
-              <circle r={HUB - 6} />
-              <circle r={HUB - 1} className="radar__hub-ring" vectorEffect="non-scaling-stroke" />
-              <text y={-4} className="radar__hub-count num" fontSize={30}>
-                {todayCount}
-              </text>
-              <text y={20} className="radar__hub-label" fontSize={13}>
-                for today
-              </text>
-            </g>
+            <RadarHub todayCount={todayCount} weekCount={weekCount} doneThisWeek={doneWeek} onOpen={() => setView('focus')} />
           </g>
 
           {areaLabels.map(({ sector, count, x, y }) => (
@@ -281,20 +257,19 @@ export function RadarView() {
             </text>
           ))}
 
-          {RINGS.map((ring) => {
-            const p = toScreen(0, -(ring.inner + ring.outer) / 2)
-            return (
-              <text key={ring.horizon} x={p.x + 6} y={p.y} className="radar__ring-label" dominantBaseline="middle">
-                {HORIZON_LABEL[ring.horizon]}
-              </text>
-            )
-          })}
-
           <g className="radar__labels" fontSize={LABEL_FONT_PX}>
             {labels
               .filter((l) => l.id !== focusedId)
               .map((l) => (
-                <text key={l.id} x={l.x} y={l.y} textAnchor={l.anchor} dominantBaseline="middle" className="radar__label" aria-hidden="true">
+                <text
+                  key={l.id}
+                  x={l.x}
+                  y={l.y}
+                  textAnchor={l.anchor}
+                  dominantBaseline="middle"
+                  className={`radar__label${l.strong ? ' is-strong' : ''}`}
+                  aria-hidden="true"
+                >
                   {l.text}
                 </text>
               ))}
@@ -313,6 +288,16 @@ export function RadarView() {
         </div>
       )}
 
+      {areas.length < MAX_AREAS && (
+        <button
+          type="button"
+          className="btn radar__new-area"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => setNewAreaOpen(true)}
+        >
+          <Icon name="plus" size={16} /> New area
+        </button>
+      )}
       <div className="radar__controls" onPointerDown={(e) => e.stopPropagation()}>
         <button type="button" className="icon-btn" onClick={() => zoomBy(1.25)} aria-label="Zoom in">
           <Icon name="plus" />
@@ -325,8 +310,24 @@ export function RadarView() {
         </button>
       </div>
       <Legend />
+      {open.length > 0 && <CoachTip id="radar-drag">Drag a dot toward the middle to do it sooner. Click a dot to open it.</CoachTip>}
     </div>
   )
+
+  if (!phone) return radar
+  return (
+    <div className="radar-phone">
+      {radar}
+      <NearList />
+    </div>
+  )
+}
+
+/** Title plus a short due date when it's within a week, e.g. "Lab report · Fri". */
+function labelText(task: Task, now: Date): string {
+  if (!task.due) return task.title
+  const days = daysBetween(todayISO(now), task.due)
+  return days <= 7 ? `${truncate(task.title, 22)} · ${formatDue(task.due, now)}` : task.title
 }
 
 /** Angle clockwise from 12 o'clock, in [0, 2π). */

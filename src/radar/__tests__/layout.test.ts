@@ -128,7 +128,7 @@ describe('placeLabels', () => {
   })
 
   it('truncates long titles with an ellipsis', () => {
-    expect(truncate('a'.repeat(40))).toHaveLength(26)
+    expect(truncate('a'.repeat(40))).toHaveLength(30)
     expect(truncate('short')).toBe('short')
   })
 })

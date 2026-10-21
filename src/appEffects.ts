@@ -1,11 +1,16 @@
 import { useEffect } from 'react'
+import { initCloud } from './cloud/controller'
 import { useMediaQuery } from './hooks'
 import { onStorageError } from './store/persist'
-import { useStore, type View } from './store/useStore'
+import { useStore, VIEWS, type View } from './store/useStore'
 
-const VIEWS: readonly View[] = ['radar', 'list', 'focus', 'reset']
-
-export const VIEW_TITLE: Record<View, string> = { radar: 'Radar', list: 'List', focus: 'Focus', reset: 'Weekly reset' }
+export const VIEW_TITLE: Record<View, string> = {
+  radar: 'Radar',
+  map: 'Map',
+  list: 'List',
+  focus: 'Focus',
+  reset: 'Weekly reset',
+}
 
 /** Applies the chosen or system theme to <html data-theme> and the browser chrome color. */
 export function useTheme(): void {
@@ -59,7 +64,7 @@ export function useShortcuts(): void {
       if (e.key === '/' || e.key === 'n') {
         e.preventDefault()
         document.getElementById('capture-input')?.focus()
-      } else if (e.key >= '1' && e.key <= '4') {
+      } else if (e.key >= '1' && e.key <= String(VIEWS.length)) {
         s.setView(VIEWS[Number(e.key) - 1])
       } else if (e.key === 'i') {
         s.setImportOpen(true)
@@ -72,6 +77,14 @@ export function useShortcuts(): void {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+}
+
+/** Starts cloud sync (if this build has it) once local data has loaded. */
+export function useCloud(): void {
+  const hydrated = useStore((s) => s.hydrated)
+  useEffect(() => {
+    if (hydrated) void initCloud()
+  }, [hydrated])
 }
 
 export function useStorageErrors(): void {

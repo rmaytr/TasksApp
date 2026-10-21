@@ -1,13 +1,15 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { parseCapture } from '../lib/capture'
 import { resolveArea } from '../lib/classify'
 import { useAreaMap, useNow, areaStyle } from '../hooks'
+import { MAX_AREAS } from '../model/defaults'
 import { HORIZON_LABEL } from '../model/types'
 import { useStore } from '../store/useStore'
 import { Icon } from './Icon'
 import './CaptureBar.css'
 
 const PLACEHOLDER = 'Add a task — try “Email mentee #orgs tomorrow !”'
+const NEW_AREA = '__new-area__'
 
 export function CaptureBar() {
   const [text, setText] = useState('')
@@ -17,6 +19,14 @@ export function CaptureBar() {
   const showToast = useStore((s) => s.showToast)
   const areaMap = useAreaMap()
   const now = useNow()
+  const setNewAreaOpen = useStore((s) => s.setNewAreaOpen)
+  // When the user creates an area from the chip, select it for the task being typed.
+  const awaitingArea = useRef<number | null>(null)
+  useEffect(() => {
+    if (awaitingArea.current === null || areas.length <= awaitingArea.current) return
+    awaitingArea.current = null
+    setAreaOverride(areas[areas.length - 1].id)
+  }, [areas])
 
   const parsed = useMemo(() => {
     if (!text.trim()) return null
@@ -72,7 +82,12 @@ export function CaptureBar() {
             <span className="dot" />
             <select
               value={areaId ?? ''}
-              onChange={(e) => setAreaOverride(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === NEW_AREA) {
+                  awaitingArea.current = areas.length
+                  setNewAreaOpen(true)
+                } else setAreaOverride(e.target.value)
+              }}
               aria-label={parsed.guessed && !override ? 'Area for this task (guessed)' : 'Area for this task'}
             >
               {areas.map((a) => (
@@ -80,6 +95,7 @@ export function CaptureBar() {
                   {a.name}
                 </option>
               ))}
+              {areas.length < MAX_AREAS && <option value={NEW_AREA}>＋ New area…</option>}
             </select>
           </label>
           {parsed.chips.map((chip) => (

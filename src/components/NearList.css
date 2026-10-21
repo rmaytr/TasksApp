@@ -1,0 +1,32 @@
+.near {
+  padding: 4px 14px 24px;
+}
+
+.near__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ink);
+  font-size: var(--step-1);
+}
+
+.near__title .num {
+  color: var(--ink-3);
+  font-weight: 500;
+  font-stretch: 100%;
+  font-size: var(--step-0);
+}
+
+.near__empty {
+  padding: 14px 0;
+  color: var(--ink-2);
+}
+
+.near__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+}
