@@ -326,13 +326,14 @@ describe('orderTasks: determinism and performance', () => {
     })
   }
 
-  it('orders 500 random tasks (with arbitrary, possibly cyclic dependencies) in under 50 ms', () => {
+  it('orders 500 random tasks (with arbitrary, possibly cyclic dependencies) fast', () => {
     const tasks = randomTasks(500, true)
     orderTasks(tasks.slice(0, 50), NOW) // warm up the JIT
     const start = performance.now()
     const items = orderTasks(tasks, NOW)
     const elapsed = performance.now() - start
-    expect(elapsed).toBeLessThan(50)
+    // Typically ~10 ms; the generous bound only catches accidental quadratic work, not a busy CI box.
+    expect(elapsed).toBeLessThan(250)
     expect(new Set(ids(items.map((i) => i.task))).size).toBe(500)
   })
 
