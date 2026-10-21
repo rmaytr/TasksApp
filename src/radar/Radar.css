@@ -1,0 +1,351 @@
+.radar {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.radar:active {
+  cursor: grabbing;
+}
+
+.radar__svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- Rings & spokes ---------- */
+.radar__ring {
+  fill: none;
+  stroke: var(--ring-line);
+  stroke-width: 1;
+}
+
+.radar__ring--even {
+  fill: var(--ring-fill);
+}
+
+.radar__spoke {
+  stroke: var(--ring-line);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+}
+
+.radar__ring-label {
+  fill: var(--ink-3);
+  font-size: 11px;
+  font-weight: 560;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.radar__area {
+  font-size: 13px;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  font-weight: 680;
+  font-stretch: 118%;
+  pointer-events: none;
+}
+
+.radar__area-count {
+  fill: var(--ink-3);
+  font-weight: 500;
+  font-stretch: 100%;
+}
+
+.radar__drop {
+  fill-rule: evenodd;
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+/* ---------- Hub ---------- */
+.radar__hub {
+  cursor: pointer;
+  outline: none;
+}
+
+.radar__hub circle {
+  fill: var(--hub);
+  transition: transform 0.25s var(--ease-out);
+}
+
+.radar__hub:hover circle,
+.radar__hub:focus-visible circle {
+  transform: scale(1.06);
+}
+
+.radar__hub-ring {
+  fill: none !important;
+  stroke: var(--ink);
+  stroke-width: 3;
+  opacity: 0;
+}
+
+.radar__hub:focus-visible .radar__hub-ring {
+  opacity: 1;
+}
+
+.radar__hub text {
+  fill: var(--on-hub);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.radar__hub-count {
+  font-weight: 700;
+  font-stretch: 112%;
+}
+
+.radar__hub-label {
+  font-weight: 520;
+  opacity: 0.75;
+}
+
+/* ---------- Nodes ---------- */
+.node {
+  cursor: pointer;
+  outline: none;
+}
+
+.node__body {
+  transition: transform 0.2s var(--ease-out);
+}
+
+.node:hover .node__body,
+.node:focus-visible .node__body {
+  transform: scale(1.25);
+}
+
+.node__hit {
+  fill: transparent;
+}
+
+.node__dot {
+  fill: var(--c);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.node--waiting .node__dot {
+  fill: var(--bg);
+  stroke: var(--c);
+  stroke-width: 2;
+  stroke-dasharray: 3 2.5;
+}
+
+.node__halo {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
+
+.node__progress {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.node__ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.node:focus-visible .node__dot {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+/* Untouched for two weeks: the dot fades but keeps a dashed ink ring so it stays visible. */
+.node--stale .node__dot {
+  fill: color-mix(in srgb, var(--c) 45%, var(--bg));
+  stroke: var(--ink-3);
+  stroke-dasharray: 2 2;
+}
+
+.node--dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+}
+
+.node--dragging .node__body {
+  transform: scale(1.4);
+}
+
+.radar--dragging .node:not(.node--dragging) {
+  pointer-events: none;
+}
+
+/* ---------- Labels ---------- */
+.radar__labels {
+  pointer-events: none;
+}
+
+.radar__label {
+  fill: var(--ink-2);
+  font-weight: 480;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.radar__focus-label text {
+  fill: var(--ink);
+  font-weight: 620;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* ---------- Completion ripple: the one celebratory moment ---------- */
+.radar__ripple {
+  fill: none;
+  stroke-width: 3;
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: ripple 1.2s var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0.1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ---------- Intro: nodes appear as a sweep passes ---------- */
+.radar--intro .node__body {
+  animation: node-in 0.45s var(--ease-out) both;
+  animation-delay: var(--delay);
+}
+
+@keyframes node-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+/* ---------- Overlays ---------- */
+.radar__empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(340px, 80%);
+  padding: 22px;
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(6px);
+  transform: translate(-50%, calc(-50% + 110px));
+  color: var(--ink-2);
+  text-align: center;
+  cursor: default;
+}
+
+.radar__empty-title {
+  color: var(--ink);
+  font-weight: 640;
+  font-stretch: var(--wide);
+  font-size: var(--step-1);
+}
+
+.radar__controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: default;
+}
+
+.radar__legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  max-width: 300px;
+  cursor: default;
+}
+
+.radar__legend > .btn {
+  color: var(--ink-3);
+}
+
+.radar__legend-body {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: var(--step--1);
+}
+
+.radar__legend-body div {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+}
+
+.radar__legend-body dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.lg-fill {
+  fill: var(--ink-2);
+}
+
+.lg-halo,
+.lg-hollow {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+}
+
+.lg-hollow {
+  stroke-dasharray: 3 2.5;
+}
+
+.lg-stale {
+  fill: color-mix(in srgb, var(--ink-2) 45%, var(--bg));
+  stroke: var(--ink-3);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 2;
+}
+
+@media (max-width: 760px) {
+  .radar__controls {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .radar__legend {
+    bottom: 8px;
+    left: 4px;
+  }
+}

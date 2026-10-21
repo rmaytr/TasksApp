@@ -1,0 +1,356 @@
+@import '@fontsource-variable/archivo/wdth.css';
+
+/* ---------- Tokens ---------- */
+:root {
+  color-scheme: light;
+  --bg: #e8ece6;
+  --surface: #f5f7f3;
+  --surface-2: #dde3db;
+  --ink: #17212b;
+  --ink-2: #4c5864;
+  --ink-3: #596470;
+  --rule: #c6cec5;
+  --field-border: #7a858f;
+  --ring-line: rgb(23 33 43 / 0.13);
+  --ring-fill: rgb(23 33 43 / 0.025);
+  --hub: #17212b;
+  --on-hub: #e8ece6;
+  --shadow: 0 1px 0 rgb(23 33 43 / 0.06), 0 12px 32px -12px rgb(23 33 43 / 0.28);
+
+  --area-indigo: #3e53d6;
+  --area-magenta: #c03683;
+  --area-teal: #0c8574;
+  --area-amber: #b87200;
+  --area-violet: #7e46d2;
+  --area-olive: #5a8411;
+  --area-sky: #1679b5;
+  --area-rose: #cf3e57;
+
+  /* Darker variants for area colors used as text (4.5:1 on --bg). */
+  --area-indigo-text: var(--area-indigo);
+  --area-magenta-text: #b3307a;
+  --area-teal-text: #0a7060;
+  --area-amber-text: #8f5800;
+  --area-violet-text: var(--area-violet);
+  --area-olive-text: #4a6e0e;
+  --area-sky-text: #126a9e;
+  --area-rose-text: #b32c44;
+
+  --font: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --wide: 118%;
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.4rem;
+  --step-3: 1.85rem;
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --rail: 232px;
+  --drawer: 380px;
+  --topbar: 64px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #121920;
+  --surface: #1a232c;
+  --surface-2: #232e38;
+  --ink: #e5ebe5;
+  --ink-2: #a9b4bd;
+  --ink-3: #8d98a2;
+  --rule: #2f3b46;
+  --field-border: #6b7782;
+  --ring-line: rgb(229 235 229 / 0.12);
+  --ring-fill: rgb(229 235 229 / 0.02);
+  --hub: #e5ebe5;
+  --on-hub: #121920;
+  --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+
+  --area-indigo: #8592ff;
+  --area-magenta: #f06ab4;
+  --area-teal: #3cc7ae;
+  --area-amber: #f2b02e;
+  --area-violet: #b48cff;
+  --area-olive: #9bc94a;
+  --area-sky: #5bb8f0;
+  --area-rose: #ff7d90;
+
+  --area-indigo-text: var(--area-indigo);
+  --area-magenta-text: var(--area-magenta);
+  --area-teal-text: var(--area-teal);
+  --area-amber-text: var(--area-amber);
+  --area-violet-text: var(--area-violet);
+  --area-olive-text: var(--area-olive);
+  --area-sky-text: var(--area-sky);
+  --area-rose-text: var(--area-rose);
+}
+
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-stretch: var(--wide);
+  font-weight: 640;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Shared controls ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 540;
+  font-size: var(--step--1);
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn:hover {
+  border-color: var(--ink-3);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+.btn--primary:hover {
+  border-color: var(--ink);
+  opacity: 0.9;
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn--ghost:hover {
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.btn--danger {
+  color: var(--area-rose-text);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.field {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--ink-2);
+  box-shadow: 0 0 0 3px var(--ring-line);
+}
+
+textarea.field {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c, var(--ink-3));
+}
+
+.check {
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid var(--c, var(--ink-3));
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.check::after {
+  content: '';
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--bg);
+  border-bottom: 2px solid var(--bg);
+  transform: translateY(-1px) rotate(-45deg) scale(0);
+  transition: transform 0.18s var(--ease-out);
+}
+
+.check:checked {
+  background: var(--c, var(--ink));
+}
+
+.check:checked::after {
+  transform: translateY(-1px) rotate(-45deg) scale(1);
+}
+
+.check--square {
+  border-radius: 5px;
+  width: 18px;
+  height: 18px;
+}
+
+.kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 0.35em;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+/* Touch screens: every control gets a 44px target (PRD §5.5). */
+@media (pointer: coarse) {
+  .btn,
+  .icon-btn,
+  .toast__undo {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .seg button,
+  .row__steps,
+  .rail__area {
+    min-height: 44px;
+  }
+
+  .steps__del {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-s);
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
