@@ -3,6 +3,8 @@
 **Your to-dos on a radar.** Today sits in the middle, someday at the edge, and each part of your life
 gets its own slice. Drag things closer as they start to matter. Free, private, no sign-up.
 
+**Try it: <https://rmaytr.github.io/TasksApp/>**
+
 ![Nearer radar view](docs/screenshot.png)
 
 ## Why another to-do app?
@@ -98,7 +100,7 @@ optional Supabase (Auth + Postgres with RLS) for encrypted sync, with WebCrypto 
 See [docs/PRD.md](docs/PRD.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md),
 [docs/RESEARCH.md](docs/RESEARCH.md) and [docs/RELEASE.md](docs/RELEASE.md).
 
-Deploys to GitHub Pages from `main` once Pages is enabled (Settings → Pages → Source: GitHub Actions).
+Every push to `main` deploys to GitHub Pages: <https://rmaytr.github.io/TasksApp/>.
 
 ## License
 
