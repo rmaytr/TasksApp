@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon, type IconName } from './Icon'
 import './Menu.css'
@@ -32,7 +32,8 @@ export function Menu({ anchor, onClose, label, children }: MenuProps) {
   const [pos, setPos] = useState<{ top: number; left: number; up: boolean } | null>(null)
   const returnTo = useRef<HTMLElement | null>(null)
 
-  useLayoutEffect(() => {
+  // Beside the ⋯ (flipped above near the bottom) or at the right-click point, kept on screen.
+  const place = useCallback((): void => {
     const menu = ref.current
     if (!anchor || !menu) return
     const box = menu.getBoundingClientRect()
@@ -45,26 +46,37 @@ export function Menu({ anchor, onClose, label, children }: MenuProps) {
     setPos({ top: up ? above : Math.min(below, window.innerHeight - box.height - EDGE), left, up })
   }, [anchor])
 
+  useLayoutEffect(place, [place])
+
   useEffect(() => {
     if (!anchor) return
     returnTo.current = anchor.el ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
     const first = ref.current?.querySelector<HTMLElement>('[role="menuitem"], [data-menu-focus]')
     first?.focus({ preventScroll: true })
     const close = (): void => onClose()
+    // A menu on a ⋯ follows its button when the page scrolls (lists animate and scroll
+    // under it); one opened at a point simply stays put.
+    let frame = 0
+    const onScroll = (e: Event): void => {
+      if (!anchor.el || ref.current?.contains(e.target as Node)) return
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(place)
+    }
     const onDown = (e: PointerEvent): void => {
       if (ref.current?.contains(e.target as Node) || anchor.el?.contains(e.target as Node)) return
       onClose()
     }
     document.addEventListener('pointerdown', onDown, true)
     window.addEventListener('resize', close)
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
+      cancelAnimationFrame(frame)
       document.removeEventListener('pointerdown', onDown, true)
       window.removeEventListener('resize', close)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('scroll', onScroll, true)
       returnTo.current?.focus({ preventScroll: true })
     }
-  }, [anchor, onClose])
+  }, [anchor, onClose, place])
 
   if (!anchor) return null
 

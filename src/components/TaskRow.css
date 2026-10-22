@@ -23,6 +23,68 @@
   box-shadow: var(--focus-ring);
 }
 
+/* ---------- Touch swipes: the row slides over a Done (right) / Snooze (left) backdrop ---------- */
+.trow__track {
+  position: relative;
+}
+
+.trow__slide {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  touch-action: pan-y;
+}
+
+.trow__swipe {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  overflow: hidden;
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.trow__swipe span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 0 20px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.trow__swipe-done {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.trow__swipe-snooze {
+  justify-content: flex-end;
+  background: var(--sun-soft);
+  color: var(--sun-ink);
+}
+
+.trow__swipe svg {
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.is-armed-done .trow__swipe-done {
+  background: var(--ok);
+  color: var(--surface);
+}
+
+.is-armed-snooze .trow__swipe-snooze {
+  background: var(--sun);
+  color: #2b1d00;
+}
+
+.is-armed-done .trow__swipe-done svg,
+.is-armed-snooze .trow__swipe-snooze svg {
+  transform: scale(1.25);
+}
+
 .trow__main {
   display: flex;
   align-items: center;

@@ -4,6 +4,7 @@ import { formatDue } from '../lib/dates'
 import { newId } from '../lib/ids'
 import { DEFAULT_AREAS, MAX_AREAS } from '../model/defaults'
 import { nextOccurrence } from '../model/repeat'
+import { snooze } from '../model/snooze'
 import { AREA_COLORS, type Area, type AreaColor, type Horizon, type Task, type TaskDraft, type Tombstone } from '../model/types'
 import { parseHash, routeToHash, type Route, type TasksMode, type View } from '../route'
 import { wouldCreateCycle } from '../plan/order'
@@ -94,6 +95,8 @@ interface Actions {
   addTasks: (items: DraftWithArea[], options?: { replace?: boolean; newAreas?: Area[] }) => number
   updateTask: (id: string, patch: Partial<Omit<Task, 'id' | 'createdAt'>>) => void
   moveTask: (id: string, to: { horizon?: Horizon; areaId?: string }, label?: string) => void
+  /** "Not now": one day later, or one bucket out for an undated task. Undoable. */
+  snoozeTask: (id: string) => void
   setDone: (id: string, done: boolean) => void
   deleteTask: (id: string) => void
   addStep: (taskId: string, title: string) => void
@@ -245,6 +248,13 @@ export const useStore = create<StoreState>()(
         },
 
         updateTask: (id, patch) => mapTask(id, (t) => touch(t, patch)),
+
+        snoozeTask: (id) => {
+          const task = get().tasks.find((t) => t.id === id)
+          if (!task || task.done) return
+          const { patch, label } = snooze(task, new Date())
+          withUndo(label, () => mapTask(id, (t) => touch(t, patch)))
+        },
 
         moveTask: (id, to, label) => {
           const task = get().tasks.find((t) => t.id === id)

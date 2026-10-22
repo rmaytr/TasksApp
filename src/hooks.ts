@@ -51,3 +51,18 @@ export const areaStyle = (area: Area | undefined): CSSProperties => ({ '--c': ar
 /** Area color darkened where needed so it passes 4.5:1 as text. */
 export const areaTextColor = (area: Area | undefined): string =>
   area ? `var(--area-${area.color}-text)` : 'var(--ink-3)'
+
+const SWIPE_TIP = 'swipe'
+
+/** On touch screens, once ever: say that rows can be swiped. Waits for any other message. */
+export function useSwipeHint(hasRows: boolean): void {
+  const touch = useMediaQuery('(pointer: coarse)')
+  const seen = useStore((s) => s.prefs.seenTips.includes(SWIPE_TIP))
+  const busy = useStore((s) => s.toast !== null)
+  useEffect(() => {
+    if (!touch || seen || busy || !hasRows) return
+    const { showToast, setPrefs, prefs } = useStore.getState()
+    showToast('Tip: swipe a task right to finish it, left to snooze it.')
+    setPrefs({ seenTips: [...prefs.seenTips, SWIPE_TIP] })
+  }, [touch, seen, busy, hasRows])
+}

@@ -21,6 +21,7 @@ export function TaskMenu({ task, anchor, onClose }: TaskMenuProps) {
   const moveTask = useStore((s) => s.moveTask)
   const deleteTask = useStore((s) => s.deleteTask)
   const startFocus = useStore((s) => s.startFocus)
+  const snoozeTask = useStore((s) => s.snoozeTask)
   const [moving, setMoving] = useState(false)
 
   const now = useNow()
@@ -73,6 +74,11 @@ export function TaskMenu({ task, anchor, onClose }: TaskMenuProps) {
           {task.due && (
             <MenuItem icon="close" onSelect={run(() => updateTask(task.id, { due: null }))}>
               No date
+            </MenuItem>
+          )}
+          {!task.done && (
+            <MenuItem icon="clock" onSelect={run(() => snoozeTask(task.id))}>
+              Snooze
             </MenuItem>
           )}
           <MenuDivider />

@@ -93,3 +93,42 @@ test.describe('offline', () => {
     await context.setOffline(false)
   })
 })
+
+test.describe('phone swipes', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  const swipe = async (page: import('@playwright/test').Page, title: string, dx: number) => {
+    const row = page.locator('.trow__slide').filter({ hasText: title }).first()
+    await row.scrollIntoViewIfNeeded()
+    const box = await row.boundingBox()
+    if (!box) throw new Error(`no row for ${title}`)
+    const y = box.y + box.height / 2
+    const x = box.x + box.width / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    for (let i = 1; i <= 8; i += 1) await page.mouse.move(x + (dx * i) / 8, y)
+    await page.mouse.up()
+  }
+
+  test('swipe right finishes a task, swipe left snoozes one, with a one-time hint', async ({ page }) => {
+    await loadSample(page)
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Tasks' }).click()
+    // The hint waits until the 'Added 13 tasks' undo message has gone.
+    await expect(page.locator('.toast').last()).toContainText('swipe a task right', { timeout: 15_000 })
+
+    await swipe(page, 'Call home', 220)
+    await expect(page.locator('.toast').last()).toContainText('Call home')
+    await expect(page.locator('.trow__body').filter({ hasText: /^Call home/ })).toHaveCount(0)
+
+    await swipe(page, 'Finish problem set 4', -220)
+    await expect(page.locator('.toast').last()).toContainText('Snoozed to')
+
+    // A short swipe springs back and does nothing.
+    await swipe(page, 'Read chapters', 40)
+    await expect(page.locator('.trow__body').filter({ hasText: /^Read chapters/ })).toBeVisible()
+
+    await page.reload()
+    await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Tasks' }).click()
+    await expect(page.locator('.toast')).toHaveCount(0)
+  })
+})

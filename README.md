@@ -39,7 +39,8 @@ right now. Cairn is designed around a few ADHD-friendly rules:
 
 Quick actions: the ⋯ next to an area (or right-click it) adds a task there, renames, recolours,
 reorders or deletes it; the ⋯ on a task row (or right-click) sets a date, flags it, locks in, moves or
-deletes it; drag a task onto an area or onto Today in the sidebar to move it.
+deletes it; drag a task onto an area or onto Today in the sidebar to move it. On a phone, swipe a
+task right to finish it or left to snooze it (one day later, or one step out if it has no date).
 
 Also: High / Normal / Low priority, steps, repeating tasks, links in notes become chips, `Ctrl K`
 finds anything, light and dark themes, installable and works offline.

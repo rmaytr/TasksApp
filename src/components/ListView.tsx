@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { useMemo } from 'react'
-import { areaStyle, useNow } from '../hooks'
+import { areaStyle, useNow, useSwipeHint } from '../hooks'
 import { MAX_AREAS } from '../model/defaults'
 import { effectiveHorizon } from '../model/derive'
 import { HORIZONS, HORIZON_LABEL, priorityOf, type Area, type Horizon, type Priority, type Task } from '../model/types'
@@ -91,6 +91,7 @@ export function ListView({ areaId, filters }: { areaId: string | null; filters: 
 
   const searching = filters.query.length > 0
   const total = groups.reduce((n, g) => n + g.items.length, 0)
+  useSwipeHint(total > 0)
 
   return (
     <div className="list">

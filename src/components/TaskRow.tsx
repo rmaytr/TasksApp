@@ -1,8 +1,8 @@
-import { motion } from 'motion/react'
-import { useRef, useState } from 'react'
+import { animate, motion, useMotionValue, type PanInfo } from 'motion/react'
+import { useRef, useState, type MouseEvent } from 'react'
 import { TASK_DRAG_TYPE } from '../lib/drag'
 import { extractLinks } from '../lib/links'
-import { areaStyle, useAreaMap, useReducedMotion } from '../hooks'
+import { areaStyle, useAreaMap, useMediaQuery, useReducedMotion } from '../hooks'
 import { isStale } from '../model/derive'
 import { priorityOf, type Task } from '../model/types'
 import { useStore } from '../store/useStore'
@@ -44,6 +44,7 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
   const link = extractLinks(`${task.title}\n${task.notes}`)[0]
   const menu = useMenu()
   const dotsRef = useRef<HTMLButtonElement>(null)
+  const { enabled: swipeable, x: swipeX, ref: swipeRef, armed, onPointerDownCapture, onDragStart, onDrag, onDragEnd, onClickCapture } = useSwipe(task)
 
   return (
     <motion.li
@@ -55,10 +56,36 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
       className={`trow${task.done ? ' is-done' : ''}${selected ? ' is-selected' : ''}${isStale(task, now) ? ' is-stale' : ''}${menu.anchor ? ' has-menu' : ''}`}
       style={areaStyle(area)}
     >
+      <div className={`trow__track${armed ? ` is-armed-${armed}` : ''}`}>
+      {swipeable && (
+        <div className="trow__swipe" aria-hidden="true">
+          <span className="trow__swipe-done">
+            <Icon name="check" size={18} /> Done
+          </span>
+          <span className="trow__swipe-snooze">
+            Snooze <Icon name="clock" size={18} />
+          </span>
+        </div>
+      )}
+      <motion.div
+        ref={swipeRef}
+        className="trow__slide"
+        style={{ x: swipeX }}
+        drag={swipeable ? 'x' : false}
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.9}
+        dragMomentum={false}
+        onPointerDownCapture={onPointerDownCapture}
+        onDragStart={onDragStart}
+        onDrag={onDrag}
+        onDragEnd={onDragEnd}
+        onClickCapture={onClickCapture}
+      >
       <div
         className="trow__main"
-        // Drag a row onto an area (or Today) in the sidebar to move it there.
-        draggable={!task.done}
+        // Drag a row onto an area (or Today) in the sidebar to move it there (mouse only; touch swipes).
+        draggable={!task.done && !swipeable}
         onDragStart={(e) => {
           e.dataTransfer.setData(TASK_DRAG_TYPE, task.id)
           e.dataTransfer.setData('text/plain', task.title)
@@ -130,6 +157,8 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
           />
         </span>
       </div>
+      </motion.div>
+      </div>
       <TaskMenu task={task} anchor={menu.anchor} onClose={menu.close} />
       {open && (
         <div className="trow__steps-body">
@@ -138,4 +167,70 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
       )}
     </motion.li>
   )
+}
+
+type Armed = 'done' | 'snooze' | null
+
+/**
+ * Touch swipes on a row: right to finish, left to snooze. Past the threshold the action is
+ * "armed" (the backdrop pops and the phone ticks); letting go there runs it, anywhere else
+ * springs the row back. Mouse users keep drag-to-area and the ⋯ menu instead.
+ */
+function useSwipe(task: Task) {
+  const touch = useMediaQuery('(pointer: coarse)')
+  const reduce = useReducedMotion()
+  const setDone = useStore((s) => s.setDone)
+  const snoozeTask = useStore((s) => s.snoozeTask)
+  const x = useMotionValue(0)
+  const ref = useRef<HTMLDivElement>(null)
+  const [armed, setArmed] = useState<Armed>(null)
+  // A swipe that ends where it started must not also count as a tap that opens the task.
+  const swiped = useRef(false)
+  const enabled = touch && !task.done
+
+  const threshold = (): number => Math.min(110, (ref.current?.offsetWidth ?? 320) * 0.32)
+
+  const onDrag = (_: unknown, info: PanInfo): void => {
+    const next: Armed = info.offset.x > threshold() ? 'done' : info.offset.x < -threshold() ? 'snooze' : null
+    if (next === armed) return
+    if (next) navigator.vibrate?.(8)
+    setArmed(next)
+  }
+
+  const onDragEnd = (_: unknown, info: PanInfo): void => {
+    const width = ref.current?.offsetWidth ?? 320
+    const action = armed
+    setArmed(null)
+    const fast = { duration: reduce ? 0 : 0.16, ease: 'easeOut' as const }
+    if (action === 'done') {
+      void animate(x, width, fast).then(() => setDone(task.id, true))
+    } else if (action === 'snooze') {
+      void animate(x, -width, fast).then(() => {
+        snoozeTask(task.id)
+        // If the row stays in this list, slide it back in from the far side.
+        x.set(width * 0.35)
+        void animate(x, 0, { type: 'spring', stiffness: 420, damping: 36, duration: reduce ? 0 : undefined })
+      })
+    } else {
+      void animate(x, 0, { type: 'spring', stiffness: 520, damping: 34, velocity: info.velocity.x })
+    }
+  }
+
+  // Each new touch starts clean (touch screens often send no click after a swipe).
+  const onPointerDownCapture = (): void => {
+    swiped.current = false
+  }
+
+  const onDragStart = (): void => {
+    swiped.current = true
+  }
+
+  const onClickCapture = (e: MouseEvent): void => {
+    if (!swiped.current) return
+    swiped.current = false
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  return { enabled, x, ref, armed, onPointerDownCapture, onDragStart, onDrag, onDragEnd, onClickCapture }
 }

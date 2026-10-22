@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { useMemo, useState } from 'react'
-import { useAreaMap, useNow, areaStyle } from '../hooks'
+import { useAreaMap, useNow, useSwipeHint, areaStyle } from '../hooks'
 import { daysBetween, formatDue, todayISO } from '../lib/dates'
 import { doneThisWeek, effectiveHorizon, nextStep } from '../model/derive'
 import type { Task } from '../model/types'
@@ -84,6 +84,7 @@ export function HomeView() {
     { label: 'Open', value: open.length },
   ]
   const blockerName = (ids: Task[]): string | undefined => ids[0]?.title
+  useSwipeHint(today.length + week.length > 0)
 
   return (
     <div className="home">
