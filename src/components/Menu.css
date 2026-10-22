@@ -1,0 +1,160 @@
+.menu {
+  position: fixed;
+  z-index: 200;
+  display: grid;
+  min-width: 220px;
+  max-width: min(300px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+  transform-origin: top right;
+  animation: menu-in 0.14s var(--ease-out);
+}
+
+.menu--up {
+  transform-origin: bottom right;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--step--1);
+  text-align: left;
+}
+
+.menu__item svg {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  outline: none;
+  background: var(--sunken);
+}
+
+.menu__item--danger,
+.menu__item--danger svg {
+  color: var(--danger);
+}
+
+.menu__item--danger:hover,
+.menu__item--danger:focus-visible {
+  background: var(--danger-soft);
+}
+
+.menu__spacer {
+  width: 16px;
+  flex: none;
+}
+
+.menu__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__hint {
+  color: var(--ink-3);
+  font-size: var(--step--2);
+}
+
+.menu__area {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu__area .dot {
+  width: 8px;
+  height: 8px;
+}
+
+.menu__label {
+  padding: 8px 10px 4px;
+  color: var(--ink-3);
+  font-size: var(--step--2);
+}
+
+.menu__divider {
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.menu__swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 4px 6px 6px;
+}
+
+.menu__swatch {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sw);
+  color: #fff;
+  transition: transform 0.15s var(--ease-spring);
+}
+
+.menu__swatch:hover {
+  transform: scale(1.12);
+}
+
+.menu__swatch:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.menu__form {
+  display: grid;
+  gap: 8px;
+  padding: 6px;
+}
+
+.menu__form p {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.menu__form .field {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: var(--step--1);
+}
+
+.menu__row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (pointer: coarse) {
+  .menu__item {
+    min-height: 44px;
+  }
+}

@@ -179,3 +179,17 @@ describe('dependencies', () => {
     expect(state().toast).toBe(toast)
   })
 })
+
+describe('moveArea', () => {
+  it('moves an area up or down and stops at the ends', () => {
+    const ids = () => state().areas.map((a) => a.id)
+    const [first, second] = ids()
+    state().moveArea(second!, -1)
+    expect(ids().slice(0, 2)).toEqual([second, first])
+    state().moveArea(second!, -1)
+    expect(ids()[0]).toBe(second)
+    const last = ids().at(-1)!
+    state().moveArea(last, 1)
+    expect(ids().at(-1)).toBe(last)
+  })
+})

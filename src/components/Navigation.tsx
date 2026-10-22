@@ -1,11 +1,15 @@
 import { motion } from 'motion/react'
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState, type DragEvent } from 'react'
 import { areaStyle } from '../hooks'
+import { isTaskDrag, TASK_DRAG_TYPE } from '../lib/drag'
 import { MAX_AREAS } from '../model/defaults'
+import type { Area } from '../model/types'
 import { useStore, type View } from '../store/useStore'
+import { AreaMenu } from './AreaMenu'
 import { Dialog } from './Dialog'
 import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
+import { useMenu } from './useMenu'
 import { SyncBadge } from './SyncBadge'
 import './Navigation.css'
 
@@ -43,6 +47,8 @@ export function Sidebar() {
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
   const setQuickFindOpen = useStore((s) => s.setQuickFindOpen)
   const setQuickAddOpen = useStore((s) => s.setQuickAddOpen)
+  const moveTask = useStore((s) => s.moveTask)
+  const [dropOnToday, setDropOnToday] = useState(false)
 
   return (
     <nav className="side" aria-label="Main">
@@ -63,10 +69,26 @@ export function Sidebar() {
         {NAV.map((item) => {
           const active = view === item.view && !(item.view === 'tasks' && areaFilter)
           return (
-            <li key={item.view}>
+            <li
+              key={item.view}
+              // Dropping a dragged task on Today moves it to today.
+              {...(item.view === 'home' && {
+                onDragOver: (e: DragEvent) => {
+                  if (!isTaskDrag(e)) return
+                  e.preventDefault()
+                  setDropOnToday(true)
+                },
+                onDragLeave: () => setDropOnToday(false),
+                onDrop: (e: DragEvent) => {
+                  setDropOnToday(false)
+                  const id = e.dataTransfer.getData(TASK_DRAG_TYPE)
+                  if (id) moveTask(id, { horizon: 'today' }, 'Moved to Today')
+                },
+              })}
+            >
               <button
                 type="button"
-                className="side__link"
+                className={`side__link${item.view === 'home' && dropOnToday ? ' is-drop' : ''}`}
                 aria-current={active ? 'page' : undefined}
                 onClick={() => navigate({ view: item.view, area: null })}
                 aria-keyshortcuts={item.key}
@@ -98,6 +120,115 @@ function NavPill() {
   return <motion.span layoutId="side-pill" className="side__pill" transition={{ type: 'spring', stiffness: 520, damping: 42 }} />
 }
 
+interface AreaItemProps {
+  area: Area
+  count: number
+  current: boolean
+  onOpen: () => void
+}
+
+/**
+ * One area in the sidebar: click to open its page, ⋯ (or right-click) for its actions,
+ * rename in place, and drop a dragged task on it to move the task there.
+ */
+function AreaItem({ area, count, current, onOpen }: AreaItemProps) {
+  const updateArea = useStore((s) => s.updateArea)
+  const moveTask = useStore((s) => s.moveTask)
+  const menu = useMenu()
+  const dotsRef = useRef<HTMLButtonElement>(null)
+  const [renaming, setRenaming] = useState(false)
+  const [dropping, setDropping] = useState(false)
+
+  if (renaming) {
+    return (
+      <li>
+        <form
+          className="side__rename"
+          style={areaStyle(area)}
+          onSubmit={(e) => {
+            e.preventDefault()
+            // Enter unmounts the field without a blur, so save here too.
+            const name = new FormData(e.currentTarget).get('name')?.toString().trim()
+            if (name && name !== area.name) updateArea(area.id, { name })
+            setRenaming(false)
+          }}
+        >
+          <span className="side__area-dot" />
+          <input
+            className="side__rename-input"
+            name="name"
+            defaultValue={area.name}
+            autoFocus
+            maxLength={40}
+            aria-label={`Rename ${area.name}`}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={(e) => {
+              const name = e.currentTarget.value.trim()
+              if (name && name !== area.name) updateArea(area.id, { name })
+              setRenaming(false)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                e.currentTarget.value = area.name
+                e.currentTarget.blur()
+              }
+            }}
+          />
+        </form>
+      </li>
+    )
+  }
+
+  return (
+    <li
+      className={`side__area-item${menu.anchor ? ' has-menu' : ''}${dropping ? ' is-drop' : ''}`}
+      onDragOver={(e) => {
+        if (!isTaskDrag(e)) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        setDropping(true)
+      }}
+      onDragLeave={() => setDropping(false)}
+      onDrop={(e) => {
+        setDropping(false)
+        const id = e.dataTransfer.getData(TASK_DRAG_TYPE)
+        if (id) moveTask(id, { areaId: area.id }, `Moved to ${area.name}`)
+      }}
+    >
+      <button
+        type="button"
+        className="side__area"
+        style={areaStyle(area)}
+        aria-current={current ? 'page' : undefined}
+        onClick={onOpen}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          // The keyboard menu key reports (0, 0): open beside the ⋯ instead.
+          menu.openAt(e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { el: dotsRef.current })
+        }}
+      >
+        {current && <NavPill />}
+        <span className="side__area-dot" />
+        <span className="side__area-name">{area.name}</span>
+        <span className="side__count num">{count}</span>
+      </button>
+      <button
+        ref={dotsRef}
+        type="button"
+        className="side__dots"
+        aria-label={`Options for ${area.name}`}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(menu.anchor)}
+        onClick={() => (menu.anchor ? menu.close() : menu.openAt({ el: dotsRef.current }))}
+      >
+        <Icon name="dots" size={18} />
+      </button>
+      <AreaMenu area={area} anchor={menu.anchor} onClose={menu.close} onRename={() => setRenaming(true)} />
+    </li>
+  )
+}
+
 /** Each area opens its own page (Tasks filtered to that area). */
 function AreaNav({ onPick }: { onPick?: () => void }) {
   const areas = useStore((s) => s.areas)
@@ -115,23 +246,16 @@ function AreaNav({ onPick }: { onPick?: () => void }) {
       </h2>
       <ul>
         {areas.map((area) => (
-          <li key={area.id}>
-            <button
-              type="button"
-              className="side__area"
-              style={areaStyle(area)}
-              aria-current={view === 'tasks' && areaFilter === area.id ? 'page' : undefined}
-              onClick={() => {
-                navigate({ view: 'tasks', area: area.id })
-                onPick?.()
-              }}
-            >
-              {view === 'tasks' && areaFilter === area.id && <NavPill />}
-              <span className="side__area-dot" />
-              <span className="side__area-name">{area.name}</span>
-              <span className="side__count num">{counts.get(area.id) ?? 0}</span>
-            </button>
-          </li>
+          <AreaItem
+            key={area.id}
+            area={area}
+            count={counts.get(area.id) ?? 0}
+            current={view === 'tasks' && areaFilter === area.id}
+            onOpen={() => {
+              navigate({ view: 'tasks', area: area.id })
+              onPick?.()
+            }}
+          />
         ))}
       </ul>
       {areas.length < MAX_AREAS && (

@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { areaStyle, useAreaMap } from '../hooks'
 import { MapView } from '../map/MapView'
 import { RadarView } from '../radar/RadarView'
 import type { TasksMode } from '../route'
 import { useStore } from '../store/useStore'
+import { AreaMenu } from './AreaMenu'
 import { Icon, type IconName } from './Icon'
 import { ListView, type ListFilters, type ListSort } from './ListView'
+import { useMenu } from './useMenu'
 import './TasksView.css'
 
 const MODES: readonly { mode: TasksMode; label: string; icon: IconName }[] = [
@@ -26,7 +28,10 @@ export function TasksView() {
   const areaId = useStore((s) => s.areaFilter)
   const navigate = useStore((s) => s.navigate)
   const setQuickAddOpen = useStore((s) => s.setQuickAddOpen)
-  const setSettingsOpen = useStore((s) => s.setSettingsOpen)
+  const updateArea = useStore((s) => s.updateArea)
+  const menu = useMenu()
+  const dotsRef = useRef<HTMLButtonElement>(null)
+  const [renaming, setRenaming] = useState(false)
   const area = useAreaMap().get(areaId ?? '')
   const [filters, setFilters] = useState<ListFilters>({ sort: 'smart', reverse: false, showDone: false, query: '' })
   const title = area?.name ?? 'All tasks'
@@ -42,11 +47,45 @@ export function TasksView() {
       <header className="tasks__head">
         <div className="tasks__title-row">
           {area && <span className="tasks__swatch" aria-hidden="true" />}
-          <h1 className="tasks__title">{title}</h1>
+          {area && renaming ? (
+            <input
+              className="tasks__title tasks__rename"
+              defaultValue={area.name}
+              autoFocus
+              maxLength={40}
+              aria-label={`Rename ${area.name}`}
+              onFocus={(e) => e.currentTarget.select()}
+              onBlur={(e) => {
+                const name = e.currentTarget.value.trim()
+                if (name && name !== area.name) updateArea(area.id, { name })
+                setRenaming(false)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') {
+                  e.currentTarget.value = area.name
+                  e.currentTarget.blur()
+                }
+              }}
+            />
+          ) : (
+            <h1 className="tasks__title">{title}</h1>
+          )}
           {area && (
-            <button type="button" className="icon-btn" onClick={() => setSettingsOpen(true)} aria-label={`Edit the ${area.name} area`}>
-              <Icon name="dots" size={20} />
-            </button>
+            <>
+              <button
+                ref={dotsRef}
+                type="button"
+                className="icon-btn"
+                onClick={() => (menu.anchor ? menu.close() : menu.openAt({ el: dotsRef.current }))}
+                aria-label={`Options for ${area.name}`}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(menu.anchor)}
+              >
+                <Icon name="dots" size={20} />
+              </button>
+              <AreaMenu area={area} anchor={menu.anchor} onClose={menu.close} onRename={() => setRenaming(true)} />
+            </>
           )}
           <div className="tasks__spacer" />
           <div className="seg tasks__modes" role="group" aria-label="Show as">

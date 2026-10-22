@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { TASK_DRAG_TYPE } from '../lib/drag'
 import { extractLinks } from '../lib/links'
 import { areaStyle, useAreaMap, useReducedMotion } from '../hooks'
 import { isStale } from '../model/derive'
@@ -8,6 +9,8 @@ import { useStore } from '../store/useStore'
 import { DuePill } from './DueDate'
 import { Icon } from './Icon'
 import { StepList } from './StepList'
+import { TaskMenu, TaskMenuButton } from './TaskMenu'
+import { useMenu } from './useMenu'
 import './TaskRow.css'
 
 interface TaskRowProps {
@@ -39,6 +42,8 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
   const reduce = useReducedMotion()
   const doneSteps = task.steps.filter((s) => s.done).length
   const link = extractLinks(`${task.title}\n${task.notes}`)[0]
+  const menu = useMenu()
+  const dotsRef = useRef<HTMLButtonElement>(null)
 
   return (
     <motion.li
@@ -47,10 +52,24 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, height: 0, x: reduce ? 0 : 24, transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] } }}
       transition={{ duration: 0.18 }}
-      className={`trow${task.done ? ' is-done' : ''}${selected ? ' is-selected' : ''}${isStale(task, now) ? ' is-stale' : ''}`}
+      className={`trow${task.done ? ' is-done' : ''}${selected ? ' is-selected' : ''}${isStale(task, now) ? ' is-stale' : ''}${menu.anchor ? ' has-menu' : ''}`}
       style={areaStyle(area)}
     >
-      <div className="trow__main">
+      <div
+        className="trow__main"
+        // Drag a row onto an area (or Today) in the sidebar to move it there.
+        draggable={!task.done}
+        onDragStart={(e) => {
+          e.dataTransfer.setData(TASK_DRAG_TYPE, task.id)
+          e.dataTransfer.setData('text/plain', task.title)
+          e.dataTransfer.effectAllowed = 'move'
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          // The keyboard menu key reports (0, 0): open beside the ⋯ instead.
+          menu.openAt(e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : { el: dotsRef.current })
+        }}
+      >
         <input
           type="checkbox"
           className="check"
@@ -103,8 +122,15 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
               </span>
             </button>
           )}
+          <TaskMenuButton
+            title={task.title}
+            open={Boolean(menu.anchor)}
+            buttonRef={dotsRef}
+            onToggle={() => (menu.anchor ? menu.close() : menu.openAt({ el: dotsRef.current }))}
+          />
         </span>
       </div>
+      <TaskMenu task={task} anchor={menu.anchor} onClose={menu.close} />
       {open && (
         <div className="trow__steps-body">
           <StepList task={task} compact />

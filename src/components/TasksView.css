@@ -38,6 +38,21 @@
   letter-spacing: -0.025em;
 }
 
+.tasks__rename {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+  outline: none;
+  box-shadow: var(--focus-ring);
+  field-sizing: content;
+}
+
 .tasks__spacer {
   flex: 1;
 }

@@ -69,6 +69,8 @@ interface UiState {
   areaFilter: string | null
   /** The global "Add a task" sheet (Home has its own inline capture). */
   quickAddOpen: boolean
+  /** Area the New task sheet starts in (from an area's menu); null means "guess". */
+  quickAddArea: string | null
   /** Tasks the assistant is still sorting (shows a small sparkle on them). */
   assistBusy: string[]
   selectedId: string | null
@@ -100,6 +102,8 @@ interface Actions {
   addArea: (name: string, color?: AreaColor) => string | null
   updateArea: (id: string, patch: Partial<Omit<Area, 'id' | 'updatedAt'>>) => void
   deleteArea: (id: string, moveTasksTo: string) => void
+  /** Moves an area up (-1) or down (+1) in the sidebar order. */
+  moveArea: (id: string, delta: -1 | 1) => void
   clearEverything: () => void
   /** Removes everything from this device (sign-out on a shared computer). No undo, no tombstones. */
   wipeLocal: () => void
@@ -112,7 +116,7 @@ interface Actions {
   setView: (view: View) => void
   /** Go anywhere: e.g. `navigate({ view: 'tasks', area: id })`. */
   navigate: (to: Partial<Route>) => void
-  setQuickAddOpen: (open: boolean) => void
+  setQuickAddOpen: (open: boolean, areaId?: string | null) => void
   setAssistBusy: (taskId: string, busy: boolean) => void
   applyAssist: (result: AssistPatch) => void
   /** Adds "do after" links suggested by Plan my day (skips any that would form a loop). */
@@ -201,6 +205,7 @@ export const useStore = create<StoreState>()(
         tasksMode: initialRoute().mode,
         areaFilter: initialRoute().area,
         quickAddOpen: false,
+        quickAddArea: null,
         assistBusy: [],
         selectedId: null,
         toast: null,
@@ -324,6 +329,17 @@ export const useStore = create<StoreState>()(
             areas: s.areas.map((a) => (a.id === id ? { ...a, ...patch, updatedAt: Date.now() } : a)),
           })),
 
+        moveArea: (id, delta) =>
+          set((s) => {
+            const from = s.areas.findIndex((a) => a.id === id)
+            const to = from + delta
+            if (from < 0 || to < 0 || to >= s.areas.length) return s
+            const areas = [...s.areas]
+            const [moved] = areas.splice(from, 1)
+            if (moved) areas.splice(to, 0, { ...moved, updatedAt: Date.now() })
+            return { ...invalidateUndo(), areas }
+          }),
+
         deleteArea: (id, moveTasksTo) => {
           const { areas } = get()
           const area = areas.find((a) => a.id === id)
@@ -416,7 +432,7 @@ export const useStore = create<StoreState>()(
               toast: s.toast?.undoable || s.toast?.sticky ? s.toast : null,
             }
           }),
-        setQuickAddOpen: (open) => set({ quickAddOpen: open }),
+        setQuickAddOpen: (open, areaId = null) => set({ quickAddOpen: open, quickAddArea: open ? areaId : null }),
         setAssistBusy: (taskId, busy) =>
           set((s) => ({ assistBusy: busy ? [...s.assistBusy, taskId] : s.assistBusy.filter((id) => id !== taskId) })),
 

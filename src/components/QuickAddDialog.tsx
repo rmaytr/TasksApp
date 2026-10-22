@@ -19,6 +19,7 @@ export function QuickAddDialog() {
 
 function QuickAddBody({ onClose }: { onClose: () => void }) {
   const areaFilter = useStore((s) => s.areaFilter)
+  const quickAddArea = useStore((s) => s.quickAddArea)
   const view = useStore((s) => s.view)
   const tasks = useStore((s) => s.tasks)
   const areaMap = useAreaMap()
@@ -27,7 +28,7 @@ function QuickAddBody({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="dialog__body quick">
-      <Capture variant="sheet" areaId={view === 'tasks' ? areaFilter : null} autoFocus onAdded={(id) => setAdded((a) => [id, ...a])} />
+      <Capture variant="sheet" areaId={quickAddArea ?? (view === 'tasks' ? areaFilter : null)} autoFocus onAdded={(id) => setAdded((a) => [id, ...a])} />
       {addedTasks.length > 0 && (
         <ul className="quick__added" aria-label="Added just now">
           {addedTasks.map((t) => (

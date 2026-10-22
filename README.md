@@ -37,6 +37,10 @@ right now. Cairn is designed around a few ADHD-friendly rules:
   smaller steps. Each thing you finish adds a stone to your cairn.
 - **Weekly reset.** A three-minute sweep: pull closer, keep, push out, done or drop, one card at a time.
 
+Quick actions: the ⋯ next to an area (or right-click it) adds a task there, renames, recolours,
+reorders or deletes it; the ⋯ on a task row (or right-click) sets a date, flags it, locks in, moves or
+deletes it; drag a task onto an area or onto Today in the sidebar to move it.
+
 Also: High / Normal / Low priority, steps, repeating tasks, links in notes become chips, `Ctrl K`
 finds anything, light and dark themes, installable and works offline.
 

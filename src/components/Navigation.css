@@ -191,6 +191,111 @@
   text-align: center;
 }
 
+/* ---------- Area rows: ⋯ appears in place of the count on hover/focus ---------- */
+.side__area-item {
+  position: relative;
+}
+
+.side__area-item .side__area {
+  padding-right: 40px;
+}
+
+.side__area-item .side__count {
+  position: absolute;
+  right: 10px;
+  transition: opacity 0.12s ease;
+}
+
+.side__dots {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+
+.side__dots:hover {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+}
+
+.side__dots:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.side__area-item:hover .side__dots,
+.side__area-item:focus-within .side__dots,
+.side__area-item.has-menu .side__dots {
+  opacity: 1;
+}
+
+.side__area-item:hover .side__count,
+.side__area-item:focus-within .side__count,
+.side__area-item.has-menu .side__count {
+  opacity: 0;
+}
+
+/* A dragged task hovering over an area. */
+.side__area-item.is-drop .side__area {
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--c);
+  color: var(--ink);
+}
+
+.side__rename {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 0 6px 0 12px;
+  border-radius: 999px;
+  background: var(--canvas);
+  box-shadow: var(--focus-ring);
+}
+
+.side__rename-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 500;
+  outline: none;
+}
+
+@media (pointer: coarse) {
+  .side__dots {
+    opacity: 1;
+  }
+
+  .side__area-item .side__count,
+  .side__area-item:hover .side__count,
+  .side__area-item:focus-within .side__count {
+    right: 38px;
+    opacity: 1;
+  }
+
+  .side__area-item .side__area {
+    padding-right: 64px;
+  }
+}
+
+.side__link.is-drop {
+  box-shadow: inset 0 0 0 1.5px var(--primary);
+  background: var(--primary-soft);
+}
+
 .side__new-area {
   margin-top: 2px;
   color: var(--ink-3);

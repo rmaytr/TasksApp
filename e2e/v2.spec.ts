@@ -109,3 +109,92 @@ test.describe('do after', () => {
     await expect(taskButton(page, 'Add the site to my resume')).toContainText('after Publish the site')
   })
 })
+
+test.describe('area menu', () => {
+  test('rename, recolour, reorder and delete an area from the sidebar', async ({ page }) => {
+    await loadSample(page)
+    const side = page.getByRole('navigation', { name: 'Main' })
+    const openMenu = async (name: string) => {
+      await side.getByRole('button', { name: new RegExp(`^${name}`) }).first().hover()
+      await side.getByRole('button', { name: `Options for ${name}` }).click()
+      return page.getByRole('menu', { name: `${name} options` })
+    }
+
+    let menu = await openMenu('Learning')
+    await menu.getByRole('menuitem', { name: 'Rename' }).click()
+    const input = side.getByLabel('Rename Learning')
+    await input.fill('Study')
+    await input.press('Enter')
+    await expect(sideButton(page, /^Study/)).toBeVisible()
+
+    menu = await openMenu('Study')
+    await menu.getByRole('menuitemradio', { name: 'Rose' }).click()
+    await expect(menu.getByRole('menuitemradio', { name: 'Rose' })).toHaveAttribute('aria-checked', 'true')
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+
+    menu = await openMenu('Study')
+    await menu.getByRole('menuitem', { name: 'Move up' }).click()
+    // Reordering keeps the menu open so it can be repeated.
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Escape')
+    const names = await side.locator('.side__area-name').allTextContents()
+    expect(names.indexOf('Study')).toBeLessThan(names.indexOf('Projects'))
+
+    const before = await areaTotal(page)
+    menu = await openMenu('Study')
+    await menu.getByRole('menuitem', { name: 'Delete area…' }).click()
+    await menu.getByLabel('Move its tasks to').selectOption({ label: 'Life' })
+    await menu.getByRole('button', { name: 'Delete' }).click()
+    await expect(sideButton(page, /^Study/)).toHaveCount(0)
+    await expect.poll(() => areaTotal(page)).toBe(before)
+    await toast(page).getByRole('button', { name: 'Undo' }).click()
+    await expect(sideButton(page, /^Study/)).toBeVisible()
+  })
+
+  test('Add a task here opens New task in that area', async ({ page }) => {
+    await loadSample(page)
+    const side = page.getByRole('navigation', { name: 'Main' })
+    await side.getByRole('button', { name: /^Career/ }).first().hover()
+    await side.getByRole('button', { name: 'Options for Career' }).click()
+    await page.getByRole('menuitem', { name: 'Add a task here' }).click()
+    const dialog = page.getByRole('dialog', { name: 'New task' })
+    await dialog.getByLabel('New task').fill('Email the recruiter')
+    await expect(dialog.locator('.capture__area select')).toHaveValue('career')
+  })
+})
+
+test.describe('task menu', () => {
+  test('⋯ sets a date, moves and deletes without opening the task', async ({ page }) => {
+    await loadSample(page)
+    await page.keyboard.press('2')
+    const row = page.locator('.trow').filter({ has: taskButton(page, 'Call home') })
+    await row.hover()
+    await row.getByRole('button', { name: 'Actions for Call home' }).click()
+    let menu = page.getByRole('menu', { name: 'Actions for Call home' })
+    await menu.getByRole('menuitem', { name: /^Tomorrow/ }).click()
+    await expect(row.locator('.due')).toHaveText('Tomorrow')
+
+    await row.click({ button: 'right' })
+    menu = page.getByRole('menu', { name: 'Actions for Call home' })
+    await menu.getByRole('menuitem', { name: 'Move to area…' }).click()
+    await menu.getByRole('menuitemradio', { name: /Career/ }).click()
+    const career = page.locator('section.list__group').filter({ has: page.getByRole('heading', { name: /^Career/ }) })
+    await expect(taskButton(career, 'Call home')).toBeVisible()
+
+    const moved = career.locator('.trow').filter({ has: taskButton(page, 'Call home') })
+    await moved.click({ button: 'right' })
+    await page.getByRole('menu', { name: 'Actions for Call home' }).getByRole('menuitem', { name: 'Delete' }).click()
+    await expect(taskButton(page, 'Call home')).toHaveCount(0)
+  })
+
+  test('drag a task onto an area in the sidebar', async ({ page }) => {
+    await loadSample(page)
+    await page.keyboard.press('2')
+    const row = page.locator('.trow').filter({ has: taskButton(page, 'Call home') }).locator('.trow__main')
+    await row.dragTo(sideButton(page, /^Projects/))
+    await expect(toast(page).last()).toContainText('Moved to Projects')
+    const projects = page.locator('section.list__group').filter({ has: page.getByRole('heading', { name: /^Projects/ }) })
+    await expect(taskButton(projects, 'Call home')).toBeVisible()
+  })
+})

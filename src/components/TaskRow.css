@@ -82,6 +82,52 @@
   display: none;
 }
 
+/* ⋯ shows on hover or focus (always on touch); right-click opens the same menu. */
+.trow__dots {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.trow:hover .trow__dots,
+.trow:focus-within .trow__dots,
+.trow.has-menu .trow__dots {
+  opacity: 1;
+}
+
+.trow__dots:hover {
+  background: var(--sunken);
+  color: var(--ink);
+}
+
+.trow__dots:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.trow__main[draggable='true'] {
+  cursor: grab;
+}
+
+.trow__main[draggable='true']:active {
+  cursor: grabbing;
+}
+
+@media (pointer: coarse) {
+  .trow__dots {
+    opacity: 1;
+  }
+}
+
 .trow__flag {
   display: inline-grid;
   place-items: center;
