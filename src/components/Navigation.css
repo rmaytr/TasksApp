@@ -3,9 +3,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 18px 14px 14px;
-  border-right: 1px solid var(--line);
-  background: var(--surface-2);
+  padding: 18px 12px 14px 14px;
+  background: var(--chrome);
   overflow-y: auto;
 }
 
@@ -33,8 +32,8 @@
 
 .brand__name {
   font-size: var(--step-2);
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .side__actions {
@@ -53,10 +52,10 @@
   align-items: center;
   gap: 10px;
   min-height: 40px;
-  padding: 0 10px 0 12px;
+  padding: 0 10px 0 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-s);
-  background: var(--surface);
+  border-radius: 999px;
+  background: var(--canvas);
   color: var(--ink-3);
   text-align: left;
   transition: border-color 0.15s ease, color 0.15s ease;
@@ -86,14 +85,16 @@
 }
 
 .side__link {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 40px;
+  min-height: 38px;
   padding: 0 12px;
   border: 0;
-  border-radius: var(--radius-s);
+  border-radius: 999px;
   background: transparent;
   color: var(--ink-2);
   font-weight: 500;
@@ -102,7 +103,7 @@
 }
 
 .side__link:hover {
-  background: var(--sunken);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
   color: var(--ink);
 }
 
@@ -111,10 +112,19 @@
   box-shadow: var(--focus-ring);
 }
 
-.side__link[aria-current='page'] {
-  background: var(--primary-soft);
-  color: var(--primary-soft-ink);
-  font-weight: 620;
+.side__link[aria-current='page'],
+.side__area[aria-current='page'] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The active marker: one neutral pill that slides from item to item. */
+.side__pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 .side__link--small {
@@ -124,21 +134,22 @@
 
 .side__heading {
   padding: 0 12px 6px;
-  font-size: var(--step--2);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--step--1);
+  font-weight: 500;
   color: var(--ink-3);
 }
 
 .side__area {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 12px;
   border: 0;
-  border-radius: var(--radius-s);
+  border-radius: 999px;
   background: transparent;
   color: var(--ink-2);
   font-weight: 500;
@@ -147,7 +158,7 @@
 }
 
 .side__area:hover {
-  background: var(--sunken);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
   color: var(--ink);
 }
 
@@ -156,16 +167,10 @@
   box-shadow: var(--focus-ring);
 }
 
-.side__area[aria-current='page'] {
-  background: color-mix(in srgb, var(--c) 14%, var(--surface));
-  color: var(--ink);
-  font-weight: 620;
-}
-
 .side__area-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
   background: var(--c);
 }
 
@@ -196,7 +201,6 @@
   gap: 2px;
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid var(--line);
 }
 
 /* ---------- Sync badge ---------- */
@@ -264,8 +268,7 @@
     align-items: center;
     padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter: blur(16px);
+    background: var(--chrome);
   }
 
   .tabs__item {
@@ -282,9 +285,17 @@
     font-weight: 500;
   }
 
+  .tabs__item {
+    transition: color 0.15s ease, transform 0.18s var(--ease-spring);
+  }
+
+  .tabs__item:active {
+    transform: scale(0.92);
+  }
+
   .tabs__item[aria-current='page'] {
-    color: var(--primary);
-    font-weight: 650;
+    color: var(--ink);
+    font-weight: 600;
   }
 
   .tabs__add {
@@ -294,14 +305,14 @@
     width: 52px;
     height: 52px;
     margin-top: -18px;
-    border: 4px solid var(--canvas);
-    border-radius: 18px;
-    background: var(--primary);
-    color: var(--on-primary);
-    box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--primary) 80%, transparent);
+    border: 4px solid var(--chrome);
+    border-radius: 50%;
+    background: var(--action);
+    color: var(--on-action);
+    transition: transform 0.18s var(--ease-spring);
   }
 
   .tabs__add:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
   }
 }

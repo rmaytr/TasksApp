@@ -13,9 +13,7 @@
     gap: 8px;
     min-height: 56px;
     padding: 6px 8px 6px 10px;
-    border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--canvas) 90%, transparent);
-    backdrop-filter: blur(14px);
+    background: var(--chrome);
   }
 
   .topbar .brand__name {

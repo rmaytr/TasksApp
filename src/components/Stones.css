@@ -1,0 +1,18 @@
+/* ---------- Cairn stones ---------- */
+.stones__ground {
+  fill: var(--sunken);
+}
+
+.stones__stone {
+  fill: color-mix(in srgb, var(--primary) 70%, var(--surface));
+}
+
+.stones__ghost {
+  fill: var(--sunken);
+  stroke: var(--canvas);
+  stroke-width: 2;
+}
+
+.stones__stone--top {
+  fill: var(--sun);
+}

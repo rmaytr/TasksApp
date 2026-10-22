@@ -272,8 +272,7 @@
   width: min(340px, 80%);
   padding: 22px;
   border-radius: var(--radius-m);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--panel);
   transform: translate(-50%, calc(-50% + 110px));
   color: var(--ink-2);
   text-align: center;

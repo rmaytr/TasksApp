@@ -1,10 +1,13 @@
+/* On wide screens the panel is a second sheet beside the page, on the same frame. */
 .detail {
   position: relative;
   z-index: 20;
   width: var(--drawer);
-  height: 100dvh;
-  border-left: 1px solid var(--line);
-  background: var(--surface);
+  height: calc(100dvh - 16px);
+  margin: 8px 8px 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--canvas);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -361,8 +364,7 @@
   margin: 0 -22px -28px;
   padding: 12px 22px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--canvas);
 }
 
 .detail__spacer {
@@ -396,7 +398,8 @@
     height: auto;
     max-height: 88dvh;
     z-index: 40;
-    border-left: 0;
+    margin: 0;
+    border: 0;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 

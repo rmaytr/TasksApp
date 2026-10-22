@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { parseImport } from '../lib/import'
 import { SAMPLE_TEXT } from '../model/defaults'
 import { useStore } from '../store/useStore'
@@ -8,6 +9,9 @@ import { Logo } from './Logo'
 import './Onboarding.css'
 
 /** First run: a real modal, so nothing behind it can be clicked until you pick a start. */
+/** StrictMode runs effects twice in dev; load the sample once. */
+let sampleLoaded = false
+
 export function Onboarding() {
   const show = useStore((s) => !s.prefs.onboarded && s.tasks.length === 0)
   const setPrefs = useStore((s) => s.setPrefs)
@@ -21,6 +25,16 @@ export function Onboarding() {
     const { rows, newAreas } = planImport(drafts, areas)
     addTasks(rows.map((r) => ({ draft: r.draft, areaId: r.areaId })), { newAreas })
   }
+
+  // Dev only: `?sample` skips the welcome with sample tasks, so screenshot tools see real screens.
+  useEffect(() => {
+    if (!import.meta.env.DEV || !show || sampleLoaded || !new URLSearchParams(location.search).has('sample')) return
+    sampleLoaded = true
+    loadSample()
+    finish()
+    // Runs once when the welcome would first show.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show])
 
   return (
     <Dialog open={show} onClose={finish} title="Welcome to Cairn">

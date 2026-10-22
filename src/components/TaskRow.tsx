@@ -45,7 +45,7 @@ export function TaskRow({ task, now, blockedBy }: TaskRowProps) {
       layout={!reduce}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, height: 0 }}
+      exit={{ opacity: 0, height: 0, x: reduce ? 0 : 24, transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] } }}
       transition={{ duration: 0.18 }}
       className={`trow${task.done ? ' is-done' : ''}${selected ? ' is-selected' : ''}${isStale(task, now) ? ' is-stale' : ''}`}
       style={areaStyle(area)}

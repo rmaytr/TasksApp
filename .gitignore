@@ -29,3 +29,4 @@ personal/
 # Test output
 test-results/
 playwright-report/
+.taste-skill/

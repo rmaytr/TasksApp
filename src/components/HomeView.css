@@ -1,59 +1,163 @@
+/*
+ * Today: a centred 1100px column on a 12-column grid (77px columns, 16px gutters:
+ * 12 x 77 + 11 x 16 = 1100). Rows share column lines: counts 3/3/3/3, then Up next 9 +
+ * the cairn 3, then Today 6 + This week 6, so every internal edge meets one above it.
+ */
 .home {
   display: grid;
   align-content: start;
-  gap: 26px;
-  width: min(760px, 100%);
+  gap: 16px;
+  width: min(1100px, 100%);
   margin: 0 auto;
-  padding: 36px 28px 80px;
+  padding: 56px 32px 80px;
 }
 
 .home__head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+/* The greeting: the screen's one statement, in the serif. */
+.home__hello {
+  font-size: 3rem;
+  color: var(--ink);
+}
+
+.home__finding {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  max-width: 70ch;
+  color: var(--ink-2);
+  font-size: var(--step-1);
 }
 
 .home__date {
   color: var(--ink-3);
+}
+
+.home__date::after {
+  content: '.';
+}
+
+.home__remind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin-left: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
   font-size: var(--step--1);
   font-weight: 500;
+  transition: background 0.15s ease, transform 0.18s var(--ease-spring);
 }
 
-.home__hello {
-  margin-top: 2px;
-  font-size: var(--step-4);
-  font-weight: 620;
-  letter-spacing: -0.03em;
+.home__remind:hover {
+  background: var(--sunken);
 }
 
-.home__stats {
-  display: flex;
-  gap: 8px;
+.home__remind:active {
+  transform: scale(0.95);
 }
 
-.home__stat {
-  display: inline-flex;
-  align-items: baseline;
+/* ---------- Counts: one container split by quiet dividers ---------- */
+.home__counts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 8px 0 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+}
+
+.home__count-cell {
+  display: grid;
+  align-content: start;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--ok-soft);
-  color: var(--ink-2);
+  padding: 16px 20px 18px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.home__count-cell:first-child {
+  border-left: 0;
+}
+
+.home__count-cell:hover {
+  background: var(--surface-2);
+}
+
+.home__count-cell:focus-visible {
+  outline: none;
+  box-shadow: inset var(--focus-ring);
+}
+
+.home__count-cell dt {
+  color: var(--ink-3);
   font-size: var(--step--1);
 }
 
-.home__stat strong {
-  color: var(--ok);
-  font-size: var(--step-0);
+.home__count-cell dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.1;
 }
 
-.home__section {
+.home__count-cell dd.is-zero {
+  color: var(--ink-3);
+}
+
+.home__count-cell dd.is-overdue:not(.is-zero) {
+  color: var(--danger);
+}
+
+/* ---------- Panels ---------- */
+.home__grid {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
 }
 
-.home__section-head {
+.home__grid > .panel {
+  display: grid;
+  gap: 14px;
+}
+
+.home__next,
+.home__empty {
+  grid-column: span 9;
+}
+
+.home__cairn {
+  grid-column: span 3;
+  align-self: stretch;
+  justify-items: center;
+  align-content: space-between;
+  text-align: center;
+}
+
+.home__list {
+  grid-column: span 6;
+}
+
+.home__list.is-wide,
+.home__reset {
+  grid-column: 1 / -1;
+}
+
+.home__panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -61,40 +165,51 @@
   min-height: 32px;
 }
 
-.home__section-head h2 {
+.home__grid h2 {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: var(--step-1);
+  justify-self: start;
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .home__count {
   color: var(--ink-3);
-  font-size: var(--step--1);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .home__more {
   justify-self: start;
 }
 
-/* ---------- Up next card ---------- */
-.next {
-  position: relative;
+/* ---------- The week's cairn: the product's own element ---------- */
+.home__cairn-line {
   display: grid;
-  gap: 14px;
-  padding: 22px 24px 20px;
-  overflow: hidden;
-  border-color: color-mix(in srgb, var(--c) 30%, var(--line));
-  box-shadow: var(--shadow);
+  gap: 2px;
+  color: var(--ink-2);
 }
 
-.next::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 5px;
-  background: var(--c);
+.home__cairn-line .num {
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.home__cairn-sub {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}
+
+/* ---------- Up next: the one white card on the screen ---------- */
+.next {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
 }
 
 .next__top {
@@ -109,10 +224,12 @@
   gap: 8px;
   color: var(--ink-2);
   font-size: var(--step--1);
-  font-weight: 560;
+  font-weight: 500;
 }
 
 .next__area .dot {
+  width: 9px;
+  height: 9px;
   background: var(--c);
 }
 
@@ -127,16 +244,18 @@
   border: 0;
   border-radius: var(--radius-xs);
   background: transparent;
+  color: var(--ink);
   font-size: var(--step-3);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-align: left;
   text-wrap: balance;
+  transition: color 0.15s ease;
 }
 
 .next__title:hover {
-  color: var(--primary-soft-ink);
+  color: var(--primary);
 }
 
 .next__title:focus-visible {
@@ -149,9 +268,8 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: var(--radius-m);
-  background: color-mix(in srgb, var(--c) 9%, var(--surface-2));
-  font-weight: 480;
+  border-radius: var(--radius-s);
+  background: var(--panel);
   cursor: pointer;
 }
 
@@ -162,8 +280,7 @@
 .next__step-label {
   display: block;
   color: var(--ink-3);
-  font-size: var(--step--2);
-  font-weight: 560;
+  font-size: var(--step--1);
 }
 
 .next__plan {
@@ -179,14 +296,12 @@
 
 /* ---------- Empty and reset ---------- */
 .home__empty {
-  display: grid;
   justify-items: start;
-  gap: 8px;
-  padding: 26px 24px;
+  align-content: center;
+  min-height: 220px;
 }
 
-.home__empty h2,
-.home__reset h2 {
+.home__empty h2 {
   font-size: var(--step-1);
 }
 
@@ -196,29 +311,68 @@
 }
 
 .home__reset {
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px;
-  background: var(--primary-soft);
-  border-color: transparent;
+}
+
+.home__reset h2 {
+  margin-bottom: 4px;
+  font-size: var(--step-0);
+}
+
+@media (max-width: 1000px) {
+  .home__next,
+  .home__empty,
+  .home__list {
+    grid-column: 1 / -1;
+  }
+
+  .home__cairn {
+    grid-column: 1 / -1;
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    text-align: left;
+  }
+
+  .home__cairn h2 {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 760px) {
   .home {
-    gap: 20px;
-    padding: 18px 14px 40px;
-  }
-
-  .home__hello {
-    font-size: var(--step-3);
+    padding: 22px 16px 40px;
   }
 
   .home__head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .home__hello {
+    font-size: 2.25rem;
+  }
+
+  .home__finding {
+    font-size: var(--step-0);
+  }
+
+  .home__count-cell {
+    padding: 12px 10px 12px 12px;
+  }
+
+  .home__count-cell dt {
+    font-size: var(--step--2);
+  }
+
+  .home__count-cell dd {
+    font-size: 1.5rem;
+  }
+
+  .home__grid > .panel {
+    padding: 16px;
   }
 
   .next {
@@ -231,6 +385,6 @@
 
   .home__reset {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-start !important;
   }
 }

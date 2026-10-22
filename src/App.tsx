@@ -46,7 +46,8 @@ export default function App() {
       <Sidebar />
       <main className="main" id="main" tabIndex={-1}>
         <TopBar />
-        <div className="stage" data-view={view}>
+        {/* Keyed by view so each switch cross-fades in (feedback for the click, not an entrance). */}
+        <div className="stage" data-view={view} key={view}>
           {view === 'home' && <HomeView />}
           {view === 'tasks' && <TasksView />}
           {view === 'focus' && <LockInView />}

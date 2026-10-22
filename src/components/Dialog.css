@@ -15,8 +15,7 @@
 }
 
 .dialog::backdrop {
-  background: rgb(10 16 22 / 0.42);
-  backdrop-filter: blur(3px);
+  background: rgb(14 16 13 / 0.45);
 }
 
 .dialog[open] {

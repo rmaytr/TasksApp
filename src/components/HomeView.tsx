@@ -1,20 +1,22 @@
 import { AnimatePresence } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { useAreaMap, useNow, areaStyle } from '../hooks'
-import { todayISO } from '../lib/dates'
+import { daysBetween, formatDue, todayISO } from '../lib/dates'
 import { doneThisWeek, effectiveHorizon, nextStep } from '../model/derive'
 import type { Task } from '../model/types'
 import { orderTasks } from '../plan/order'
 import { headsUp } from '../reminders/reminders'
+import { useNotificationPermission } from '../reminders/useNotificationPermission'
 import { useStore } from '../store/useStore'
 import { Capture } from './Capture'
-import { HeadsUpStrip } from './HeadsUpStrip'
+import { Stones } from './Stones'
 import { Icon } from './Icon'
 import { DuePill } from './DueDate'
 import { PriorityMark, TaskRow } from './TaskRow'
 import './HomeView.css'
 
 const TODAY_VISIBLE = 5
+const WEEK_VISIBLE = 5
 const WEEK_MS = 7 * 86_400_000
 
 function greeting(now: Date): string {
@@ -23,6 +25,21 @@ function greeting(now: Date): string {
   if (h < 12) return 'Good morning'
   if (h < 18) return 'Good afternoon'
   return 'Good evening'
+}
+
+/** Today's one fact, from the data: the closest deadline, or what to do with a clear list. */
+function finding(tasks: readonly Task[], now: Date): string {
+  const today = todayISO(now)
+  const dated = tasks.filter((t) => !t.done && t.due !== null).sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''))
+  const late = dated.filter((t) => (t.due ?? '') < today)
+  const first = dated[0]
+  if (late.length > 1) return `${late.length} things are past their date. Start with “${late[0]?.title}”.`
+  if (first && first.due && daysBetween(today, first.due) <= 6) {
+    const when = formatDue(first.due, now)
+    return first.due < today ? `“${first.title}” was due ${when.toLowerCase()}.` : `“${first.title}” is due ${when === 'Today' || when === 'Tomorrow' ? when.toLowerCase() : `on ${when}`}.`
+  }
+  if (tasks.some((t) => !t.done)) return 'Nothing due this week. Pick one thing and start.'
+  return 'A clear head. Write down whatever is on your mind.'
 }
 
 /**
@@ -56,95 +73,123 @@ export function HomeView() {
   const openCount = plan.length
   const resetDue = openCount >= 5 && (!lastResetAt || now.getTime() - lastResetAt > WEEK_MS)
   const shownToday = showAll ? today : today.slice(0, TODAY_VISIBLE)
+  const remindersOn = useStore((s) => s.prefs.reminders.enabled)
+  const [perm, requestPermission] = useNotificationPermission()
+  const todayKey = todayISO(now)
+  const open = visible.filter((t) => !t.done)
+  const counts: { label: string; value: number; tone?: 'overdue' }[] = [
+    { label: 'Due today', value: open.filter((t) => t.due === todayKey).length },
+    { label: 'This week', value: open.filter((t) => effectiveHorizon(t, now) === 'week').length },
+    { label: 'Past due', value: open.filter((t) => t.due !== null && t.due < todayKey).length, tone: 'overdue' },
+    { label: 'Open', value: open.length },
+  ]
   const blockerName = (ids: Task[]): string | undefined => ids[0]?.title
 
   return (
     <div className="home">
       <header className="home__head">
-        <div>
-          <p className="home__date">{now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-          <h1 className="home__hello">{greeting(now)}</h1>
-        </div>
-        {done > 0 && (
-          <div className="home__stats">
-            <span className="home__stat">
-              <strong className="num">{done}</strong> done this week
-            </span>
-          </div>
-        )}
+        <h1 className="home__hello display">{greeting(now)}.</h1>
+        <p className="home__finding">
+          <span className="home__date">{now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+          {' '}
+          {finding(visible, now)}
+          {remindersOn && perm === 'default' && heads.today.length + heads.overdue.length + heads.tomorrow.length > 0 && (
+            <button type="button" className="home__remind" onClick={requestPermission}>
+              <Icon name="bell" size={14} /> Remind me
+            </button>
+          )}
+        </p>
       </header>
 
       <Capture variant="hero" />
 
-      <HeadsUpStrip heads={heads} now={now} />
-
-      {next ? (
-        <section className="home__section" aria-labelledby="next-h">
-          <div className="home__section-head">
-            <h2 id="next-h">Up next</h2>
-            <button type="button" className="btn btn--sm home__lockin" onClick={() => startFocus(null)}>
-              <Icon name="target" size={16} /> Lock in
-            </button>
-          </div>
-          <UpNextCard task={next} now={now} onSkip={() => setSkipped((s) => [...s, next.id])} />
-        </section>
-      ) : (
-        <EmptyHome hasTasks={openCount > 0} onReset={() => setSkipped([])} />
-      )}
-
-      {today.length > 0 && (
-        <section className="home__section" aria-labelledby="today-h">
-          <div className="home__section-head">
-            <h2 id="today-h">
-              Today <span className="num home__count">{today.length}</span>
-            </h2>
-          </div>
-          <ul className="trows">
-            <AnimatePresence initial={false}>
-              {shownToday.map((p) => (
-                <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
-              ))}
-            </AnimatePresence>
-          </ul>
-          {today.length > TODAY_VISIBLE && (
-            <button type="button" className="btn btn--ghost btn--sm home__more" onClick={() => setShowAll(!showAll)}>
-              {showAll ? 'Show fewer' : `Show ${today.length - TODAY_VISIBLE} more`}
-            </button>
-          )}
-        </section>
-      )}
-
-      {week.length > 0 && (
-        <section className="home__section" aria-labelledby="week-h">
-          <div className="home__section-head">
-            <h2 id="week-h">
-              This week <span className="num home__count">{week.length}</span>
-            </h2>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => navigate({ view: 'tasks', area: null, mode: 'list' })}>
-              All tasks <Icon name="arrowRight" size={14} />
-            </button>
-          </div>
-          <ul className="trows">
-            <AnimatePresence initial={false}>
-              {week.slice(0, 4).map((p) => (
-                <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
-              ))}
-            </AnimatePresence>
-          </ul>
-        </section>
-      )}
-
-      {resetDue && (
-        <section className="home__reset card">
-          <div>
-            <h2>Fresh week?</h2>
-            <p>A three-minute reset: go through each task once and decide what really matters this week.</p>
-          </div>
-          <button type="button" className="btn" onClick={() => navigate({ view: 'reset', area: null })}>
-            <Icon name="reset" size={16} /> Start reset
+      <dl className="home__counts">
+        {counts.map((c) => (
+          <button key={c.label} type="button" className="home__count-cell" onClick={() => navigate({ view: 'tasks', area: null, mode: 'list' })}>
+            <dt>{c.label}</dt>
+            <dd className={`num${c.value === 0 ? ' is-zero' : ''}${c.tone ? ` is-${c.tone}` : ''}`}>{c.value}</dd>
           </button>
+        ))}
+      </dl>
+
+      <div className="home__grid">
+        {next ? (
+          <section className="panel home__next" aria-labelledby="next-h">
+            <div className="home__panel-head">
+              <h2 id="next-h">Up next</h2>
+              <button type="button" className="btn btn--sm" onClick={() => startFocus(null)}>
+                <Icon name="target" size={15} /> Lock in
+              </button>
+            </div>
+            <UpNextCard task={next} now={now} onSkip={() => setSkipped((s) => [...s, next.id])} />
+          </section>
+        ) : (
+          <EmptyHome hasTasks={openCount > 0} onReset={() => setSkipped([])} />
+        )}
+
+        <section className="panel home__cairn" aria-labelledby="cairn-h">
+          <h2 id="cairn-h">This week’s cairn</h2>
+          <Stones count={done} size={150} />
+          <p className="home__cairn-line">
+            <span className="num">{done}</span> {done === 1 ? 'stone' : 'stones'}
+            <span className="home__cairn-sub">{done === 0 ? 'Finish one to place a stone' : 'One for each thing you finished'}</span>
+          </p>
         </section>
-      )}
+
+        {today.length > 0 && (
+          <section className={`panel home__list${week.length > 0 ? '' : ' is-wide'}`} aria-labelledby="today-h">
+            <div className="home__panel-head">
+              <h2 id="today-h">
+                Today <span className="num home__count">{today.length}</span>
+              </h2>
+            </div>
+            <ul className="trows">
+              <AnimatePresence initial={false}>
+                {shownToday.map((p) => (
+                  <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
+                ))}
+              </AnimatePresence>
+            </ul>
+            {today.length > TODAY_VISIBLE && (
+              <button type="button" className="btn btn--ghost btn--sm home__more" onClick={() => setShowAll(!showAll)}>
+                {showAll ? 'Show fewer' : `Show ${today.length - TODAY_VISIBLE} more`}
+              </button>
+            )}
+          </section>
+        )}
+
+        {week.length > 0 && (
+          <section className={`panel home__list${today.length > 0 ? '' : ' is-wide'}`} aria-labelledby="week-h">
+            <div className="home__panel-head">
+              <h2 id="week-h">
+                This week <span className="num home__count">{week.length}</span>
+              </h2>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => navigate({ view: 'tasks', area: null, mode: 'list' })}>
+                All tasks <Icon name="arrowRight" size={14} />
+              </button>
+            </div>
+            <ul className="trows">
+              <AnimatePresence initial={false}>
+                {week.slice(0, WEEK_VISIBLE).map((p) => (
+                  <TaskRow key={p.task.id} task={p.task} now={now} blockedBy={blockerName(p.blockedBy)} />
+                ))}
+              </AnimatePresence>
+            </ul>
+          </section>
+        )}
+
+        {resetDue && (
+          <section className="panel home__reset" aria-labelledby="reset-h">
+            <div>
+              <h2 id="reset-h">Fresh week?</h2>
+              <p>Three minutes: go through each task once and keep only what matters this week.</p>
+            </div>
+            <button type="button" className="btn" onClick={() => navigate({ view: 'reset', area: null })}>
+              <Icon name="reset" size={16} /> Start reset
+            </button>
+          </section>
+        )}
+      </div>
     </div>
   )
 }
@@ -159,7 +204,7 @@ function UpNextCard({ task, now, onSkip }: { task: Task; now: Date; onSkip: () =
   const doneSteps = task.steps.filter((s) => s.done).length
 
   return (
-    <article className="next card" style={areaStyle(area)}>
+    <article className="next" style={areaStyle(area)}>
       <div className="next__top">
         <span className="next__area">
           <span className="dot" /> {area?.name}
@@ -201,7 +246,7 @@ function UpNextCard({ task, now, onSkip }: { task: Task; now: Date; onSkip: () =
 
 function EmptyHome({ hasTasks, onReset }: { hasTasks: boolean; onReset: () => void }) {
   return (
-    <section className="home__empty card">
+    <section className="panel home__empty">
       <h2>{hasTasks ? 'You skipped everything for now' : 'A clear head'}</h2>
       <p>
         {hasTasks

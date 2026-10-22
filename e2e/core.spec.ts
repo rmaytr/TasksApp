@@ -212,12 +212,11 @@ test.describe('task detail', () => {
 })
 
 test.describe('reminders', () => {
-  test('a task due today shows in the Coming up strip', async ({ page }) => {
+  test('a task due today becomes the line under the greeting', async ({ page }) => {
     await startEmpty(page)
     await captureTask(page, 'Pay the electric bill today')
-    const strip = page.getByRole('region', { name: 'Coming up' })
-    await expect(strip).toBeVisible()
-    await expect(strip.getByRole('button', { name: /Pay the electric bill/ })).toBeVisible()
+    await expect(page.locator('.home__finding')).toContainText('“Pay the electric bill” is due today.')
+    await expect(page.getByRole('button', { name: 'Due today' })).toContainText('1')
   })
 })
 

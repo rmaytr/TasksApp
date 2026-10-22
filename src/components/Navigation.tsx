@@ -1,3 +1,4 @@
+import { motion } from 'motion/react'
 import { useId, useMemo, useState } from 'react'
 import { areaStyle } from '../hooks'
 import { MAX_AREAS } from '../model/defaults'
@@ -70,6 +71,7 @@ export function Sidebar() {
                 onClick={() => navigate({ view: item.view, area: null })}
                 aria-keyshortcuts={item.key}
               >
+                {active && <NavPill />}
                 <Icon name={item.icon} size={19} />
                 {item.label}
               </button>
@@ -89,6 +91,11 @@ export function Sidebar() {
       </div>
     </nav>
   )
+}
+
+/** The active marker; one shared element, so it slides between items when the page changes. */
+function NavPill() {
+  return <motion.span layoutId="side-pill" className="side__pill" transition={{ type: 'spring', stiffness: 520, damping: 42 }} />
 }
 
 /** Each area opens its own page (Tasks filtered to that area). */
@@ -119,6 +126,7 @@ function AreaNav({ onPick }: { onPick?: () => void }) {
                 onPick?.()
               }}
             >
+              {view === 'tasks' && areaFilter === area.id && <NavPill />}
               <span className="side__area-dot" />
               <span className="side__area-name">{area.name}</span>
               <span className="side__count num">{counts.get(area.id) ?? 0}</span>

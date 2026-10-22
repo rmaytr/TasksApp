@@ -57,11 +57,8 @@
   gap: 18px;
   width: min(620px, 100%);
   padding: 28px 30px;
-  border: 1px solid var(--rule);
-  border-top: 5px solid var(--c);
   border-radius: var(--radius-l);
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  background: var(--panel);
 }
 
 .reset__meta {

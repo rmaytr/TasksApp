@@ -16,7 +16,6 @@
 
 .trow:hover {
   border-color: var(--line-strong);
-  box-shadow: var(--shadow-sm);
 }
 
 .trow.is-selected {

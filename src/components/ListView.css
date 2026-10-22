@@ -70,6 +70,6 @@
 @media (max-width: 760px) {
   .list {
     gap: 22px;
-    padding: 4px 14px 40px;
+    padding: 4px 16px 40px;
   }
 }

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useReducedMotion } from '../hooks'
+import './Stones.css'
 
 const MAX_STONES = 9
 const GHOSTS = 3

@@ -64,7 +64,7 @@ export function LockInView() {
     return (
       <div className="lockin lockin--start">
         <Stones count={0} size={170} />
-        <h1 className="lockin__headline">What should I do right now?</h1>
+        <h1 className="lockin__headline display">What should I do right now?</h1>
         <p className="lockin__lede">
           {open.length === 0
             ? 'Nothing is open. Add a task on Today first.'
@@ -88,7 +88,7 @@ export function LockInView() {
     return (
       <div className="lockin lockin--start" role="status">
         <Stones count={0} />
-        <h1 className="lockin__headline">Looking at everything…</h1>
+        <h1 className="lockin__headline display">Looking at everything…</h1>
         <p className="lockin__lede">Deadlines first, then what other tasks depend on, then priority.</p>
       </div>
     )
@@ -109,7 +109,7 @@ export function LockInView() {
     return (
       <div className="lockin lockin--start">
         <Stones count={stones} size={170} />
-        <h1 className="lockin__headline">{stones > 0 ? 'Done for this round' : 'That’s everything'}</h1>
+        <h1 className="lockin__headline display">{stones > 0 ? 'Done for this round' : 'That’s everything'}</h1>
         <p className="lockin__lede">
           {stones > 0
             ? `You finished ${stones} ${stones === 1 ? 'thing' : 'things'}. That counts.`
@@ -239,7 +239,7 @@ function NowCard({ task, now, reason, summary, fromAssistant, onFinished, onTask
         <span className="now__task-title">{step ? task.title : area?.name}</span>
         {task.due && <DuePill due={task.due} now={now} />}
       </p>
-      <h1 id="now-step" className="now__step" tabIndex={-1}>
+      <h1 id="now-step" className="now__step display" tabIndex={-1}>
         {step ? step.title : task.title}
       </h1>
       {step && task.steps.length > 1 && (
